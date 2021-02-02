@@ -1,15 +1,30 @@
 """Set subparser parameters."""
 
 from argparse import ArgumentParser
+from functools import wraps
 from inspect import Parameter
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+
+
+def caster(annotation: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap around callable annotation so that invalid conversions just return
+    the input.
+    """
+    @wraps(annotation)
+    def wrapper(arg: Any) -> Any:
+        """Just return the input if conversion fails."""
+        try:
+            return annotation(arg)
+        except (TypeError, ValueError):
+            return arg
+    return wrapper
 
 
 def get_type(param: Parameter) -> Optional[Any]:
     """Get type annotation if there's any and if it's callable."""
     if param.annotation is param.empty or not callable(param.annotation):
         return None
-    return param.annotation
+    return caster(param.annotation)
 
 
 def set_positional_only(subparser: ArgumentParser, param: Parameter) -> None:
@@ -40,7 +55,6 @@ def set_keyword_only(subparser: ArgumentParser, param: Parameter) -> None:
 def set_var_keyword(subparser: ArgumentParser, param: Parameter) -> None:
     """Add var keyword argument to subparser."""
     # syntax: --name 'key1:val1' 'key2:val2' ...
-    # NOTE doesn't support type conversions
     subparser.add_argument(f"--{param.name}", type=str, nargs='*', default=())
 
 

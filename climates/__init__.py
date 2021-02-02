@@ -46,13 +46,9 @@ def invoke(func: CommandHandler,
                 key, val = option.split(':', 1)
                 try:
                     annotation = spec.annotations.get(spec.varkw)
-                    if annotation is None or not callable(annotation):
-                        kwargs[key] = val
-                    else:
-                        kwargs[key] = annotation(val)
-                except (TypeError, ValueError) as e:
-                    if subparser is not None:
-                        subparser.error(f"argument --{spec.varkw}: {e}")
+                    kwargs[key] = annotation(val)
+                except (TypeError, ValueError):
+                    kwargs[key] = val
             except ValueError:
                 if subparser is not None:
                     subparser.error(f"argument --{spec.varkw}: key and value "

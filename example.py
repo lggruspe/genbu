@@ -7,6 +7,7 @@ def hello(name="world", /):
 
 
 def example(a, b=1, /, c=2, *d: int, e=3, **f: int):
+    """Run example."""
     print(repr((a, b, c, d, e, f)))
 
 

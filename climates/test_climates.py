@@ -1,3 +1,4 @@
+# type: ignore
 """Test climates."""
 from argparse import ArgumentParser
 from climates import Climate, microclimate

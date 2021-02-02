@@ -1,3 +1,4 @@
+# type: ignore
 """Pytest fixtures."""
 import pytest
 from climates import Climate

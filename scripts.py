@@ -21,12 +21,12 @@ def dist():
 def lint():
     """Run linters."""
     sh("flake8 climates")
-    sh("pylint climates -d C0102,C0103")
+    sh("pylint climates -d C0102,C0103,E1136")
 
 
 def test():
     """Run tests."""
-    sh("pytest --cov=climates --cov-report=term-missing --cov-fail-under=90"
+    sh("pytest --cov=climates --cov-report=term-missing --cov-fail-under=90 "
        "--cov-branch")
 
 

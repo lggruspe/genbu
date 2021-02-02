@@ -1,10 +1,14 @@
 """Command-line interfaces made accessible to even simpletons."""
 
-from argparse import ArgumentParser
+import argparse
 from inspect import getfullargspec
+from typing import Any, Callable, Dict, Optional, Sequence
 
 
-def microclimate(subparsers, name, func):
+CommandHandler = Callable[..., Any]
+
+
+def microclimate(subparsers: Any, name: str, func: CommandHandler) -> Any:
     """Add and return subparser.
 
     Obtain command-line options from function signature.
@@ -13,7 +17,7 @@ def microclimate(subparsers, name, func):
     subparser = subparsers.add_parser(name, help=doc, description=doc)
 
     spec = getfullargspec(func)
-    defaults = spec.defaults or []
+    defaults: Sequence[Any] = spec.defaults or ()
     offset = len(spec.args) - len(defaults)
     for i, arg in enumerate(spec.args):
         if i < offset:
@@ -30,7 +34,7 @@ def microclimate(subparsers, name, func):
     return subparser
 
 
-def invoke(func, namespace):
+def invoke(func: CommandHandler, namespace: Dict[str, Any]) -> Any:
     """Invoke function on args in namespace dictionary."""
     args = []
     kwargs = {}
@@ -50,20 +54,22 @@ def invoke(func, namespace):
 
 class Climate:
     """Climate CLI."""
-    def __init__(self, description):
+    def __init__(self, description: str):
         self.description = description
-        self.commands = {}
+        self.commands: Dict[str, CommandHandler] = {}
 
-    def add_commands(self, *args, **kwargs):
+    def add_commands(self,
+                     *args: CommandHandler,
+                     **kwargs: CommandHandler) -> Any:
         """Add commands."""
         for arg in args:
             self.commands[arg.__name__] = arg
         for key, val in kwargs.items():
             self.commands[key] = val
 
-    def to_argparse(self):
+    def to_argparse(self) -> argparse.ArgumentParser:
         """Create ArgumentParser."""
-        parser = ArgumentParser(description=self.description)
+        parser = argparse.ArgumentParser(description=self.description)
 
         subparsers = parser.add_subparsers(title="subcommands",
                                            dest="$command")
@@ -72,11 +78,11 @@ class Climate:
             commands[key] = microclimate(subparsers, key, val)
         return parser
 
-    def run(self, args=None):
+    def run(self, args: Optional[Sequence[str]] = None) -> Any:
         """Run argument parser and command handler."""
         parser = self.to_argparse()
         _args = vars(parser.parse_args(args))
-        command = self.commands.get(_args.get("$command"))
+        command = self.commands.get(_args.get("$command", ""))
         if not command:
             return parser.print_usage()
         return invoke(command, _args)

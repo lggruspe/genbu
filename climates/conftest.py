@@ -13,7 +13,7 @@ def cli():
 @pytest.fixture
 def cmd_foo():
     """Create function to be used as command."""
-    def foo(a):
+    def foo(a, /):
         """Foo."""
         return "foo", a
     return foo
@@ -22,7 +22,7 @@ def cmd_foo():
 @pytest.fixture
 def cmd_bar():
     """Create function to be used as command."""
-    def bar(a, *b):
+    def bar(a, /, *b):
         """Bar."""
         return "bar", a, b
     return bar
@@ -31,7 +31,7 @@ def cmd_bar():
 @pytest.fixture
 def cmd_baz():
     """Create function to be used as command."""
-    def baz(a, *b, **c):
+    def baz(a, /, *b, **c):
         """Baz."""
         return "baz", a, b, c
     return baz

@@ -1,8 +1,14 @@
 from climates import Climate
 
-def hello(name="world"):
+
+def hello(name="world", /):
     """Say hello."""
     print(f"Hello, {name}!")
+
+
+def example(a, b=1, /, c=2, *d: int, e=3, **f: int):
+    print(repr((a, b, c, d, e, f)))
+
 
 def bye(name=None):
     """Say bye."""
@@ -11,6 +17,7 @@ def bye(name=None):
     else:
         print("Bye-bye.")
 
+
 cli = Climate("Hello world app.")
-cli.add_commands(hello, bye)
+cli.add_commands(hello, bye, example)
 cli.run()

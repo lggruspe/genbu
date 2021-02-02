@@ -58,7 +58,10 @@ def invoke(func: CommandHandler,
                     subparser.error(f"argument --{spec.varkw}: key and value "
                                     "should be separated by ':' as in "
                                     "'key:value'")
-    return func(*args, **kwargs)
+    try:
+        return func(*args, **kwargs)
+    except TypeError as e:
+        subparser.error(e)
 
 
 class Climate:

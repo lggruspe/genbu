@@ -9,6 +9,7 @@ def sh(cmd):
 
 def init():
     """Initialize repository."""
+    sh("pip install --upgrade pip wheel")
     sh("pip install -r requirements.txt")
 
 

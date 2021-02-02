@@ -5,7 +5,7 @@ with open("README.md") as fp:
 
 setuptools.setup(
     name="climates",
-    version="0.0.0",
+    version="0.0.1",
     author="Levi Gruspe",
     author_email="mail.levig@gmail.com",
     description="Command-line interfaces made accessible to even simpletons",
@@ -21,5 +21,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Environment :: Console",
     ],
-    python_requires=">=3.0",
+    python_requires=">=3.8",
 )

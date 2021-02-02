@@ -24,7 +24,7 @@ def set_positional_only(subparser: ArgumentParser, param: Parameter) -> None:
 def set_var_positional(subparser: ArgumentParser, param: Parameter) -> None:
     """Add var positional argument to subparser."""
     subparser.add_argument(f"--{param.name}", nargs='*', type=get_type(param),
-                           default=[])
+                           default=())
 
 
 def set_keyword_only(subparser: ArgumentParser, param: Parameter) -> None:
@@ -33,14 +33,15 @@ def set_keyword_only(subparser: ArgumentParser, param: Parameter) -> None:
         subparser.add_argument(f"--{param.name}", type=get_type(param),
                                nargs='?', default=param.default)
     else:
-        subparser.add_argument(f"--{param.name}", type=get_type(param))
+        subparser.add_argument(f"--{param.name}", type=get_type(param),
+                               required=True)
 
 
 def set_var_keyword(subparser: ArgumentParser, param: Parameter) -> None:
     """Add var keyword argument to subparser."""
     # syntax: --name 'key1:val1' 'key2:val2' ...
     # NOTE doesn't support type conversions
-    subparser.add_argument(f"--{param.name}", type=str, nargs='*', default=[])
+    subparser.add_argument(f"--{param.name}", type=str, nargs='*', default=())
 
 
 HANDLERS = {

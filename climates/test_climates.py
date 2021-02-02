@@ -1,6 +1,7 @@
 # type: ignore
 """Test climates."""
 from argparse import ArgumentParser
+import pytest
 from climates import Climate, microclimate
 
 
@@ -74,3 +75,90 @@ def test_climate_run(cli, cmd_foo, cmd_bar, cmd_baz):
     assert res_foo == ("foo", "1")
     assert res_bar == ("bar", "1", ("2", "3"))
     assert res_baz == ("baz", "1", ("2", "3"), dict(c="4", d="5", e="6"))
+
+
+def test_climate_run_with_positional_only_parameters(cli):
+    """Climate.run should add positional arguments to the subparser."""
+    def func(foo, bar: int, baz="hello", /):
+        """Test function."""
+        return foo, bar, baz
+    cli.add_commands(func)
+    foo, bar, baz = cli.run(["func", "foo", "1", "baz"])
+    assert foo == "foo"
+    assert bar == 1
+    assert baz == "baz"
+
+
+def test_climate_run_with_keyword_only_parameters(cli):
+    """Climate.run should add named arguments to the subparser. """
+    def func(*, foo, bar: int, baz="hello"):
+        """Test function."""
+        return foo, bar, baz
+    cli.add_commands(func)
+    command = "func --foo foo --bar 1 --baz baz".split()
+    foo, bar, baz = cli.run(command)
+    assert foo == "foo"
+    assert bar == 1
+    assert baz == "baz"
+
+
+def test_climate_run_with_required_keyword_only_parameter(cli):
+    """Climate.run should abort if the argument isn't given."""
+    def func(*, _arg):
+        """Test function."""
+    cli.add_commands(func)
+    with pytest.raises(SystemExit):
+        cli.run(["func"])
+
+
+def test_climate_run_with_parameter_with_callable_annotation(cli):
+    """Climate.run should automatically use it to convert values."""
+    def func(arg: float):
+        """Test function."""
+        return arg
+    cli.add_commands(func)
+    result = cli.run(["func", "--arg", "1.5"])
+    assert result == 1.5
+
+
+def test_climate_run_with_var_positional_parameter(cli):
+    """Climate.run should abort the program if there's an invalid argument.
+
+    It should otherwise convert the values to the specified type.
+    """
+    def func(*args: int):
+        """Test function."""
+        return args
+    cli.add_commands(func)
+    with pytest.raises(SystemExit):
+        cli.run(["func", "--args", "a"])
+
+    result = cli.run(["func", "--args", "1", "2"])
+    assert result == (1, 2)
+
+
+def test_climate_run_with_var_keyword_parameter(cli):
+    """Climate.run should abort the program if there's an invalid argument.
+
+    Otherwise, it should convert the values to the specified type.
+    """
+    def func(**kwargs: int):
+        """Test function."""
+        return kwargs
+    cli.add_commands(func)
+    with pytest.raises(SystemExit):
+        cli.run(["func", "--kwargs", "a1"])
+    with pytest.raises(SystemExit):
+        cli.run(["func", "--kwargs", "a:a"])
+    result = cli.run(["func", "--kwargs", "a:1", "b:2"])
+    assert result == {"a": 1, "b": 2}
+
+
+def test_climate_run_with_multiple_values_for_argument(cli):
+    """Climate.run should abort the program."""
+    def func(arg="foo", **kwargs):
+        """Test function."""
+        return arg, kwargs
+    cli.add_commands(func)
+    with pytest.raises(SystemExit):
+        cli.run(["func", "--kwargs", "arg:bar"])

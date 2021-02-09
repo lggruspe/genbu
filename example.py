@@ -19,6 +19,6 @@ def bye(name=None):
         print("Bye-bye.")
 
 
-cli = Climate("Hello world app.")
+cli = Climate("hello", description="Hello world app.")
 cli.add_commands(hello, bye, example)
 cli.run()

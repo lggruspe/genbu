@@ -17,7 +17,7 @@ Usage
 # Step 1: import Climate
 from climates import Climate
 # Step 2: create Climate object
-cli = Climate("Hello world app.")
+cli = Climate("hello", description="Hello world app.")
 # Step 3: ???
 # Step 4: add commands to CLI
 cli.add_commands(hello, bye)
@@ -27,6 +27,12 @@ cli.run()
 ```
 
 See `example.py` for details.
+
+Features
+--------
+
+- Generate CLI help and options from docstrings and type annotations
+- Automatic dispatch to command handling functions
 
 License
 -------

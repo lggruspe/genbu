@@ -32,6 +32,6 @@ def test():
 
 
 if __name__ == "__main__":
-    cli = Climate("Dev tools.")
+    cli = Climate("scripts.py", description="Dev scripts.")
     cli.add_commands(init, dist, lint, test)
     cli.run()

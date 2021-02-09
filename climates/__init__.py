@@ -62,7 +62,8 @@ def invoke(func: CommandHandler,
 
 class Climate:
     """Climate CLI."""
-    def __init__(self, description: str):
+    def __init__(self, prog: str, description: Optional[str] = None):
+        self.prog = prog
         self.description = description
         self.commands: Dict[str, CommandHandler] = {}
         self.subparsers: Optional[Dict[str, argparse.ArgumentParser]] = None
@@ -81,7 +82,8 @@ class Climate:
 
         Also set self.subparsers.
         """
-        parser = argparse.ArgumentParser(description=self.description)
+        parser = argparse.ArgumentParser(prog=self.prog,
+                                         description=self.description)
 
         subparsers = parser.add_subparsers(title="subcommands",
                                            dest="$command")

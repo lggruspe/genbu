@@ -20,7 +20,7 @@ def test_microclimate(cmd_foo, cmd_bar, cmd_baz):
 
 def test_climate():
     """Climate constructor must set description and empty commands."""
-    cli = Climate("Test CLI app")
+    cli = Climate("test", description="Test CLI app")
     assert cli.description == "Test CLI app"
     assert not cli.commands
 
@@ -55,7 +55,7 @@ def test_climate_to_argparse(cli):
 
 def test_climate_to_argparse_description():
     """Climates.to_argparse should get description from Climate.description."""
-    cli = Climate("Test CLI app")
+    cli = Climate("test", description="Test CLI app")
     parser = cli.to_argparse()
     assert cli.description == parser.description
 

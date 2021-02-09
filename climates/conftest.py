@@ -7,7 +7,7 @@ from climates import Climate
 @pytest.fixture
 def cli():
     """Create Climate object."""
-    return Climate("Test CLI app")
+    return Climate("test", description="Test CLI app")
 
 
 @pytest.fixture

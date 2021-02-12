@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 from climates import Climate
 from subprocess import run
+import sys
 
 
 def sh(cmd):
-    run(cmd, shell=True)
+    """Run command, exit if returncode is non-zero."""
+    proc = run(cmd, shell=True)
+    if proc.returncode != 0:
+        print('> ', cmd, file=sys.stderr)
+        sys.exit(proc.returncode)
 
 
 def init():
@@ -21,7 +26,7 @@ def dist():
 
 def lint():
     """Run linters."""
-    sh("flake8 climates")
+    sh("flake8 climates --max-complexity=10")
     sh("pylint climates -d C0102,C0103,E1136")
 
 

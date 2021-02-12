@@ -2,7 +2,7 @@
 
 import argparse
 from inspect import getfullargspec, signature
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from .parameters import add as add_parameter
 
@@ -20,6 +20,21 @@ def microclimate(subparsers: Any, name: str, func: CommandHandler) -> Any:
     for param in signature(func).parameters.values():
         add_parameter(subparser, param)
     return subparser
+
+
+def parse_key_value_pair(pair: str, caster: Callable[..., Any]
+                         ) -> Optional[Tuple[str, Any]]:
+    """Parse strings of the form 'key:val'.
+
+    Raise ValueError on failure.
+    Try to convert val using caster (callable type annotation).
+    If that doesn't work, just return the original val.
+    """
+    key, val = pair.split(':', 1)
+    try:
+        return key, caster(val)
+    except (TypeError, ValueError):
+        return key, val
 
 
 def invoke(func: CommandHandler,
@@ -40,20 +55,16 @@ def invoke(func: CommandHandler,
         args.extend(namespace.get(spec.varargs, []))
     for arg in spec.kwonlyargs:
         kwargs[arg] = namespace.get(arg)
-    if spec.varkw:
-        for option in namespace.get(spec.varkw, []):
-            try:
-                key, val = option.split(':', 1)
-                try:
-                    annotation = spec.annotations.get(spec.varkw)
-                    kwargs[key] = annotation(val)
-                except (TypeError, ValueError):
-                    kwargs[key] = val
-            except ValueError:
-                if subparser is not None:
-                    subparser.error(f"argument --{spec.varkw}: key and value "
-                                    "should be separated by ':' as in "
-                                    "'key:value'")
+    for option in namespace.get(spec.varkw, []):
+        annotation = spec.annotations.get(spec.varkw)
+        try:
+            key, val = parse_key_value_pair(option, annotation)
+            kwargs[key] = val
+        except ValueError:
+            if subparser is not None:
+                subparser.error(f"argument --{spec.varkw}: key and value "
+                                "should be separated by ':' as in "
+                                "'key:value'")
     try:
         return func(*args, **kwargs)
     except TypeError as e:

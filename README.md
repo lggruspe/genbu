@@ -1,6 +1,11 @@
 Climates
 ========
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/lggruspe/climates/Python%20package)
+![PyPI](https://img.shields.io/pypi/v/climates)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/climates)
+![GitHub](https://img.shields.io/github/license/lggruspe/climates)
+
 Command-line interfaces made accessible to even simpletons.
 
 Installation

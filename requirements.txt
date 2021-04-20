@@ -1,5 +1,6 @@
 astroid==2.5.3
 attrs==20.3.0
+coverage==5.5
 flake8==3.9.1
 iniconfig==1.1.1
 isort==5.8.0
@@ -15,6 +16,7 @@ pyflakes==2.3.1
 pylint==2.7.4
 pyparsing==2.4.7
 pytest==6.2.3
+pytest-cov==2.11.1
 toml==0.10.2
 typed-ast==1.4.3
 typing-extensions==3.7.4.3

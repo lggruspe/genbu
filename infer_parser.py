@@ -1,9 +1,10 @@
 """Infer parser from type hints."""
 
 from functools import wraps
+import shlex
+import typing
 from types import GenericAlias
 from typing import Any, Callable, Iterable, List, Union
-import typing
 
 
 class CantParse(Exception):
@@ -30,13 +31,36 @@ def wrap(parser: Parser) -> Parser:
 
 def make_union_parser(*args: Parser) -> Parser:
     """Create parser that tries each parser in args one by one."""
-    def union(string: str):
+    def union_parser(string: str):
         for parse in args:
             result = parse(string)
             if not isinstance(result, CantParse):
                 return result
         return CantParse()
-    return union
+    return union_parser
+
+
+def make_tuple_parser(*args: Parser) -> Parser:
+    """Create shell string to tuple parser."""
+    def tuple_parser(string: str):
+        strings = shlex.split(string)
+        if len(strings) != len(args):
+            return CantParse()
+        result = tuple(parse(s) for parse, s in zip(args, strings))
+        if any(isinstance(r, CantParse) for r in result):
+            return CantParse()
+        return result
+    return tuple_parser
+
+
+def make_list_parser(parse: Parser) -> Parser:
+    """Create shell string to list parser."""
+    def list_parser(string: str):
+        result = [parse(s) for s in shlex.split(string)]
+        if any(isinstance(r, CantParse) for r in result):
+            return CantParse()
+        return result
+    return list_parser
 
 
 def parse_none(string: str) -> Union[None, CantParse]:
@@ -98,11 +122,10 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
         return parsers
 
     return (
-        CantInfer(hint) if origin is tuple else
-        CantInfer(hint) if origin is typing.Tuple else
+        make_tuple_parser(*parsers) if origin in (tuple, typing.Tuple) else
+        make_list_parser(parsers[0]) if origin in (list, typing.List) else
         CantInfer(hint) if origin is typing.Literal else
-        parsers[0] if origin is typing.Final else
-        parsers[0] if origin is typing.Annotated else
+        parsers[0] if origin in (typing.Final, typing.Annotated) else
         make_union_parser(*parsers) if origin is typing.Union else
         CantInfer(hint)
     )

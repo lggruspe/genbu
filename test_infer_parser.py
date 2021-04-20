@@ -1,6 +1,6 @@
 """Test infer_parser.py."""
 
-from typing import Annotated, Final, Optional, Tuple, Union
+from typing import Annotated, Final, List, Optional, Tuple, Union
 from infer_parser import CantInfer, CantParse, infer, parse_bool, parse_none
 
 
@@ -96,6 +96,35 @@ def test_infer_annotated_type():
     parse = infer(Annotated[bool, None])
     assert parse("false") is False
     assert parse("True") is True
+
+
+def test_infer_finite_tuple_type():
+    """infer should work with finite tuple types."""
+    parse = infer(tuple[int, float])
+    result = parse("5 5")
+    assert isinstance(result, tuple)
+    assert isinstance(result[0], int)
+    assert isinstance(result[1], float)
+    assert result == (5, 5.0)
+
+    assert isinstance(parse("5"), CantParse)
+    assert isinstance(parse("5.0 5"), CantParse)
+    assert parse("  0  '1.5'   ") == (0, 1.5)
+
+    assert infer(Tuple[bool, bool, bool])("True true 1") == \
+        (True, True, True)
+
+
+def test_infer_list_type():
+    """infer should work with list types."""
+    parse = infer(list[float])
+    result = parse("0.0 1.1 2.2 '3.3'")
+
+    assert all(isinstance(r, float) for r in result)
+    assert result == [0.0, 1.1, 2.2, 3.3]
+
+    assert infer(List[bool])("true True 1") == [True, True, True]
+    assert isinstance(infer(List[int])("1 2 3 four"), CantParse)
 
 
 def test_infer_nested_type():

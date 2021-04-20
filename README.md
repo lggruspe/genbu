@@ -24,9 +24,10 @@ Limitations
 infer-parser cannot always infer a parser.
 
 ```python
+from typing import Callable
 from infer_parser import infer, CantInfer
 
-parse = infer(tuple[int, ...])  # not yet supported
+parse = infer(Callable[..., int])  # not supported
 assert isinstance(parse, CantInfer)
 ```
 

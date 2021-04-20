@@ -40,8 +40,21 @@ def make_union_parser(*args: Parser) -> Parser:
     return union_parser
 
 
-def make_tuple_parser(*args: Parser) -> Parser:
-    """Create shell string to tuple parser."""
+ParseEllipsis = str  # used to identify ... from infer result
+
+
+def make_variable_length_tuple_parser(parse: Parser) -> Parser:
+    """Create shell string to variable-length tuple parser."""
+    def variable_length_tuple_parser(string: str):
+        result = tuple(map(parse, shlex.split(string)))
+        if any(isinstance(r, CantParse) for r in result):
+            return CantParse()
+        return result
+    return variable_length_tuple_parser
+
+
+def make_fixed_length_tuple_parser(*args: Parser) -> Parser:
+    """Create shell string to fixed-length tuple parser."""
     def tuple_parser(string: str):
         strings = shlex.split(string)
         if len(strings) != len(args):
@@ -51,6 +64,17 @@ def make_tuple_parser(*args: Parser) -> Parser:
             return CantParse()
         return result
     return tuple_parser
+
+
+def make_tuple_parser(*args: Parser) -> Union[Parser, CantInfer]:
+    """Create shell string to tuple parser."""
+    if ParseEllipsis in args:
+        if len(args) != 2:
+            return CantInfer()
+        if args[0] == ParseEllipsis:
+            return CantInfer()
+        return make_variable_length_tuple_parser(args[0])
+    return make_fixed_length_tuple_parser(*args)
 
 
 def make_list_parser(parse: Parser) -> Parser:
@@ -89,7 +113,8 @@ def is_none(hint: Any) -> bool:
         return False
 
 
-def map_infer(hints: Iterable[Any]) -> Union[List[Parser], CantInfer]:
+def map_infer(hints: Iterable[Any],
+              allow_ellipsis: bool = False) -> Union[List[Parser], CantInfer]:
     """Map infer on hints.
 
     Returns CantInfer if no parser can be inferred from any one of the hints.
@@ -99,6 +124,8 @@ def map_infer(hints: Iterable[Any]) -> Union[List[Parser], CantInfer]:
         parser = infer(hint)
         if isinstance(parser, CantInfer):
             return parser
+        if not allow_ellipsis and parser == ParseEllipsis:
+            return CantInfer()
         parsers.append(parser)
     return parsers
 
@@ -108,6 +135,8 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
 
     Returns CantInfer on failure.
     """
+    if hint == ...:
+        return ParseEllipsis
     if is_none(hint):
         return parse_none
     if hint == bool:
@@ -117,7 +146,9 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
 
     origin = typing.get_origin(hint)  # See help(get_args) for supported types:
     args = typing.get_args(hint)
-    parsers = map_infer(args)
+
+    allow_ellipsis = origin in (tuple, typing.Tuple)
+    parsers = map_infer(args, allow_ellipsis=allow_ellipsis)
     if isinstance(parsers, CantInfer):
         return parsers
 

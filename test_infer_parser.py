@@ -1,6 +1,8 @@
 """Test infer_parser.py."""
 
-from typing import Annotated, Final, List, Optional, Tuple, Union
+from typing import (
+    Annotated, Any, Callable, Final, List, Literal, Optional, Tuple, Union
+)
 from infer_parser import CantInfer, CantParse, infer, parse_bool, parse_none
 
 
@@ -98,8 +100,8 @@ def test_infer_annotated_type():
     assert parse("True") is True
 
 
-def test_infer_finite_tuple_type():
-    """infer should work with finite tuple types."""
+def test_infer_fixed_length_tuple_type():
+    """infer should work with fixed-length tuple types."""
     parse = infer(tuple[int, float])
     result = parse("5 5")
     assert isinstance(result, tuple)
@@ -113,6 +115,22 @@ def test_infer_finite_tuple_type():
 
     assert infer(Tuple[bool, bool, bool])("True true 1") == \
         (True, True, True)
+
+
+def test_infer_variable_length_tuple_type():
+    """infer should work with variable-length tuple types."""
+    parse = infer(tuple[float, ...])
+    result = parse("0.0 1.1 2.2 '3.3'")
+
+    assert all(isinstance(r, float) for r in result)
+    assert result == (0.0, 1.1, 2.2, 3.3)
+
+    assert infer(Tuple[bool, ...])("true True 1") == (True, True, True)
+    assert isinstance(infer(Tuple[int, ...])("1 2 3 four"), CantParse)
+
+    assert isinstance(infer(tuple[...]), CantInfer)
+    assert isinstance(infer(tuple[..., int]), CantInfer)
+    assert isinstance(infer(tuple[int, float, ...]), CantInfer)
 
 
 def test_infer_list_type():
@@ -137,6 +155,6 @@ def test_infer_nested_type():
 
 def test_infer_fail():
     """infer should return CantInfer on failure."""
-    assert isinstance(infer(...), CantInfer)
-    assert isinstance(infer(tuple[int, ...]), CantInfer)
-    assert isinstance(infer(Tuple[int, ...]), CantInfer)
+    assert isinstance(infer(Any), CantInfer)
+    assert isinstance(infer(Callable[..., None]), CantInfer)
+    assert isinstance(infer(Optional[Literal[0, 1, 2]]), CantInfer)

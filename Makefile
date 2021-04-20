@@ -7,7 +7,7 @@ help:
 
 lint:
 	pylint infer_parser.py
-	flake8 --max-complexity=5 infer_parser.py
+	flake8 --max-complexity=6 infer_parser.py
 	mypy infer_parser.py
 
 test:

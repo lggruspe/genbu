@@ -1,8 +1,7 @@
 """Test infer_parser.py."""
 
-from typing import (
-    Annotated, Any, Callable, Final, List, Literal, Optional, Tuple, Union
-)
+import typing
+from typing import Dict, Final, List, Optional, Tuple, Union
 from infer_parser import CantInfer, CantParse, infer, parse_bool, parse_none
 
 
@@ -95,7 +94,7 @@ def test_infer_final_type():
 
 def test_infer_annotated_type():
     """infer should work with annotated types."""
-    parse = infer(Annotated[bool, None])
+    parse = infer(typing.Annotated[bool, None])
     assert parse("false") is False
     assert parse("True") is True
 
@@ -148,6 +147,21 @@ def test_infer_list_type():
     assert isinstance(infer(list[int, float]), CantInfer)
 
 
+def test_infer_dict_type():
+    """infer should work with dict types."""
+    parse = infer(dict[str, float])
+    result = parse("foo 1.0 bar 2.0")
+    assert result == {"foo": 1.0, "bar": 2.0}
+
+    assert infer(Dict[int, int])(" 1  2 '3' 4") == {1: 2, 3: 4}
+    assert isinstance(infer(Dict[int, int])("1 2 3"), CantParse)
+    assert isinstance(infer(Dict[str, float])("1 2 foo bar"), CantParse)
+
+    assert isinstance(infer(dict[bool]), CantInfer)
+    assert isinstance(infer(dict[int, ...]), CantInfer)
+    assert isinstance(infer(dict[str, str, str]), CantInfer)
+
+
 def test_infer_nested_type():
     """infer should work with nested types."""
     parse = infer(Final[Union[Union[int, bool], Optional[float]]])
@@ -158,6 +172,6 @@ def test_infer_nested_type():
 
 def test_infer_fail():
     """infer should return CantInfer on failure."""
-    assert isinstance(infer(Any), CantInfer)
-    assert isinstance(infer(Callable[..., None]), CantInfer)
-    assert isinstance(infer(Optional[Literal[0, 1, 2]]), CantInfer)
+    assert isinstance(infer(typing.Any), CantInfer)
+    assert isinstance(infer(typing.Callable[..., None]), CantInfer)
+    assert isinstance(infer(Optional[typing.Literal[0, 1, 2]]), CantInfer)

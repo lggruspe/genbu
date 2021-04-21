@@ -40,7 +40,7 @@ def make_union_parser(*args: Parser) -> Parser:
     return union_parser
 
 
-ParseEllipsis = str  # used to identify ... from infer result
+ParseEllipsis = str  # Used to identify ... from infer result
 
 
 def make_variable_length_tuple_parser(parse: Parser) -> Parser:
@@ -89,6 +89,26 @@ def make_list_parser(*args: Parser) -> Union[Parser, CantInfer]:
             return CantParse()
         return result
     return list_parser
+
+
+def make_dict_parser(*args: Parser) -> Union[Parser, CantInfer]:
+    """Create shell string to dict parser."""
+    if len(args) != 2:
+        return CantInfer()
+    parse_key, parse_val = args
+
+    def dict_parser(string: str):
+        keys: List[Any] = []
+        vals: List[Any] = []
+        for i, token in enumerate(shlex.split(string)):
+            item = (parse_key, parse_val)[i % 2](token)
+            (keys, vals)[i % 2].append(item)
+            if isinstance(item, CantParse):
+                return item
+        if len(keys) != len(vals):
+            return CantParse()
+        return dict(zip(keys, vals))
+    return dict_parser
 
 
 def parse_none(string: str) -> Union[None, CantParse]:
@@ -148,7 +168,7 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
     if isinstance(hint, type) and not isinstance(hint, GenericAlias):
         return wrap(hint)
 
-    origin = typing.get_origin(hint)  # See help(get_args) for supported types:
+    origin = typing.get_origin(hint)  # See help(get_args) for supported types.
     args = typing.get_args(hint)
 
     allow_ellipsis = origin in (tuple, typing.Tuple)
@@ -159,6 +179,7 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
     return (
         make_tuple_parser(*parsers) if origin in (tuple, typing.Tuple) else
         make_list_parser(*parsers) if origin in (list, typing.List) else
+        make_dict_parser(*parsers) if origin in (dict, typing.Dict) else
         CantInfer(hint) if origin is typing.Literal else
         parsers[0] if origin in (typing.Final, typing.Annotated) else
         make_union_parser(*parsers) if origin is typing.Union else

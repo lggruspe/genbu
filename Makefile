@@ -6,11 +6,14 @@ help:
 	@echo "> test: Run tests"
 
 lint:
-	pylint infer_parser.py
-	flake8 --max-complexity=6 infer_parser.py
-	mypy --strict infer_parser.py
+	pylint infer_parser
+	flake8 --max-complexity=6 infer_parser
+	mypy --strict infer_parser
 
 test:
-	pytest --cov=infer_parser test_infer_parser.py --cov-report=term-missing
+	pytest --cov=infer_parser --cov-report=term-missing
 
-.PHONY:	all help lint test
+dist:
+	python setup.py sdist bdist_wheel
+
+.PHONY:	all dist help lint test

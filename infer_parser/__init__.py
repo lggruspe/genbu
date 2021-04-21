@@ -13,6 +13,9 @@ class CantParse(Exception):
 
 class CantInfer(Exception):
     """Returned by infer."""
+    def __call__(self, _: str) -> CantParse:
+        """Callable so that infer result is always callable."""
+        return CantParse(0)
 
 
 Parser = Callable[[str], Union[Any, CantParse]]

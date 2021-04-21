@@ -1,7 +1,7 @@
 infer-parser
 ============
 
-infer-parser is a Python library for inferring parsers from type annotations.
+infer-parser is a Python library for inferring shell parsers from type hints.
 
 Example
 -------

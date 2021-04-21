@@ -4,7 +4,7 @@ from functools import wraps
 import shlex
 import typing
 from types import GenericAlias
-from typing import Any, Callable, Iterable, List, Union
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 
 class CantParse(Exception):
@@ -21,9 +21,9 @@ Parser = Callable[[str], Union[Any, CantParse]]
 def wrap(parser: Parser) -> Parser:
     """Wrap parser to return CantParse on error."""
     @wraps(parser)
-    def wrapper(*args, **kwargs):
+    def wrapper(string: str) -> Union[Any, CantParse]:
         try:
-            return parser(*args, **kwargs)
+            return parser(string)
         except Exception:  # pylint: disable=broad-except
             return CantParse()
     return wrapper
@@ -31,7 +31,7 @@ def wrap(parser: Parser) -> Parser:
 
 def make_union_parser(*args: Parser) -> Parser:
     """Create parser that tries each parser in args one by one."""
-    def union_parser(string: str):
+    def union_parser(string: str) -> Union[Any, CantParse]:
         for parse in args:
             result = parse(string)
             if not isinstance(result, CantParse):
@@ -40,12 +40,13 @@ def make_union_parser(*args: Parser) -> Parser:
     return union_parser
 
 
-ParseEllipsis = str  # Used to identify ... from infer result
+ParseEllipsis = wrap(str)  # Used to identify ... from infer result
 
 
 def make_variable_length_tuple_parser(parse: Parser) -> Parser:
     """Create shell string to variable-length tuple parser."""
-    def variable_length_tuple_parser(string: str):
+    def variable_length_tuple_parser(string: str
+                                     ) -> Union[Tuple[Any, ...], CantParse]:
         result = tuple(map(parse, shlex.split(string)))
         if any(isinstance(r, CantParse) for r in result):
             return CantParse()
@@ -55,7 +56,7 @@ def make_variable_length_tuple_parser(parse: Parser) -> Parser:
 
 def make_fixed_length_tuple_parser(*args: Parser) -> Parser:
     """Create shell string to fixed-length tuple parser."""
-    def tuple_parser(string: str):
+    def tuple_parser(string: str) -> Union[Tuple[Any, ...], CantParse]:
         strings = shlex.split(string)
         if len(strings) != len(args):
             return CantParse()
@@ -71,7 +72,7 @@ def make_tuple_parser(*args: Parser) -> Union[Parser, CantInfer]:
     if ParseEllipsis in args:
         if len(args) != 2:
             return CantInfer()
-        if args[0] == ParseEllipsis:
+        if args[0] is ParseEllipsis:
             return CantInfer()
         return make_variable_length_tuple_parser(args[0])
     return make_fixed_length_tuple_parser(*args)
@@ -83,7 +84,7 @@ def make_list_parser(*args: Parser) -> Union[Parser, CantInfer]:
         return CantInfer()
     parse = args[0]
 
-    def list_parser(string: str):
+    def list_parser(string: str) -> Union[List[Any], CantParse]:
         result = [parse(s) for s in shlex.split(string)]
         if any(isinstance(r, CantParse) for r in result):
             return CantParse()
@@ -97,7 +98,7 @@ def make_dict_parser(*args: Parser) -> Union[Parser, CantInfer]:
         return CantInfer()
     parse_key, parse_val = args
 
-    def dict_parser(string: str):
+    def dict_parser(string: str) -> Union[Dict[Any, Any], CantParse]:
         keys: List[Any] = []
         vals: List[Any] = []
         for i, token in enumerate(shlex.split(string)):
@@ -148,7 +149,7 @@ def map_infer(hints: Iterable[Any],
         parser = infer(hint)
         if isinstance(parser, CantInfer):
             return parser
-        if not allow_ellipsis and parser == ParseEllipsis:
+        if not allow_ellipsis and parser is ParseEllipsis:
             return CantInfer()
         parsers.append(parser)
     return parsers

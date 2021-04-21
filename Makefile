@@ -8,7 +8,7 @@ help:
 lint:
 	pylint infer_parser.py
 	flake8 --max-complexity=6 infer_parser.py
-	mypy infer_parser.py
+	mypy --strict infer_parser.py
 
 test:
 	pytest --cov=infer_parser test_infer_parser.py --cov-report=term-missing

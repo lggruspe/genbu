@@ -1,6 +1,11 @@
 infer-parser
 ============
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/lggruspe/infer-parser/Python%20package)
+[![PyPI](https://img.shields.io/pypi/v/infer_parser)](https://pypi.org/project/infer_parser/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/infer_parser)](https://pypi.org/project/infer_parser/)
+[![GitHub](https://img.shields.io/github/license/lggruspe/infer-parser)](./LICENSE)
+
 infer-parser is a Python library for inferring shell parsers from type hints.
 
 Example

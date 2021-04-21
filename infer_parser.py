@@ -77,8 +77,12 @@ def make_tuple_parser(*args: Parser) -> Union[Parser, CantInfer]:
     return make_fixed_length_tuple_parser(*args)
 
 
-def make_list_parser(parse: Parser) -> Parser:
+def make_list_parser(*args: Parser) -> Union[Parser, CantInfer]:
     """Create shell string to list parser."""
+    if len(args) != 1:
+        return CantInfer()
+    parse = args[0]
+
     def list_parser(string: str):
         result = [parse(s) for s in shlex.split(string)]
         if any(isinstance(r, CantParse) for r in result):
@@ -154,7 +158,7 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
 
     return (
         make_tuple_parser(*parsers) if origin in (tuple, typing.Tuple) else
-        make_list_parser(parsers[0]) if origin in (list, typing.List) else
+        make_list_parser(*parsers) if origin in (list, typing.List) else
         CantInfer(hint) if origin is typing.Literal else
         parsers[0] if origin in (typing.Final, typing.Annotated) else
         make_union_parser(*parsers) if origin is typing.Union else

@@ -144,6 +144,9 @@ def test_infer_list_type():
     assert infer(List[bool])("true True 1") == [True, True, True]
     assert isinstance(infer(List[int])("1 2 3 four"), CantParse)
 
+    assert isinstance(infer(list[...]), CantInfer)
+    assert isinstance(infer(list[int, float]), CantInfer)
+
 
 def test_infer_nested_type():
     """infer should work with nested types."""

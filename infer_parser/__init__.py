@@ -1,6 +1,7 @@
 """Infer parser from type hints."""
 
 from functools import wraps
+from math import inf
 import shlex
 import typing
 from types import GenericAlias
@@ -141,21 +142,19 @@ def is_none(hint: Any) -> bool:
         return False
 
 
-def map_infer(hints: Iterable[Any],
-              allow_ellipsis: bool = False) -> Union[List[Parser], CantInfer]:
-    """Map infer on hints.
-
-    Returns CantInfer if no parser can be inferred from any one of the hints.
-    """
-    parsers = []
+def map_infer_length(hints: Iterable[Any],
+                     allow_ellipsis: bool = False
+                     ) -> Union[List[Union[int, float]], CantInfer]:
+    """Map infer_length on hints."""
+    lengths = []
     for hint in hints:
-        parser = infer(hint)
-        if isinstance(parser, CantInfer):
-            return parser
-        if not allow_ellipsis and parser is ParseEllipsis:
+        length = infer_length(hint)
+        if isinstance(length, CantInfer):
+            return length
+        if not allow_ellipsis and hint is ...:
             return CantInfer()
-        parsers.append(parser)
-    return parsers
+        lengths.append(length)
+    return lengths
 
 
 def infer(hint: Any) -> Union[Parser, CantInfer]:
@@ -163,6 +162,10 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
 
     Returns CantInfer on failure.
     """
+    # pylint: disable=too-many-return-statements
+    if isinstance(infer_length(hint), CantInfer):
+        return CantInfer()
+
     if hint == ...:
         return ParseEllipsis
     if is_none(hint):
@@ -174,11 +177,7 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
 
     origin = typing.get_origin(hint)  # See help(get_args) for supported types.
     args = typing.get_args(hint)
-
-    allow_ellipsis = origin in (tuple, typing.Tuple)
-    parsers = map_infer(args, allow_ellipsis=allow_ellipsis)
-    if isinstance(parsers, CantInfer):
-        return parsers
+    parsers = [infer(parser) for parser in args]
 
     return (
         make_tuple_parser(*parsers) if origin in (tuple, typing.Tuple) else
@@ -188,4 +187,27 @@ def infer(hint: Any) -> Union[Parser, CantInfer]:
         parsers[0] if origin in (typing.Final, typing.Annotated) else
         make_union_parser(*parsers) if origin is typing.Union else
         CantInfer(hint)
+    )
+
+
+def infer_length(hint: Any) -> Union[int, float, CantInfer]:
+    """Return max number of items in a 'flattened' list."""
+    origin = typing.get_origin(hint)
+    args = typing.get_args(hint)
+    if origin is None:
+        return 1
+
+    assert len(args) > 0
+    allow_ellipsis = origin in (tuple, typing.Tuple)
+    lengths = map_infer_length(args, allow_ellipsis=allow_ellipsis)
+    if isinstance(lengths, CantInfer):
+        return lengths
+
+    return (
+        lengths[0] if origin in (typing.Annotated, typing.Final) else
+        max(lengths) if origin is Union else
+        sum(lengths) if origin in (tuple, Tuple) and ... not in args else
+        (CantInfer() if inf in lengths else inf) if origin in
+        (dict, typing.Dict, list, typing.List, tuple, typing.Tuple) else
+        CantInfer()
     )

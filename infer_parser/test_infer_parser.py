@@ -1,8 +1,16 @@
 """Test infer_parser.py."""
 
+from math import inf
 import typing
 from typing import Dict, Final, List, Optional, Tuple, Union
-from infer_parser import CantInfer, CantParse, infer, parse_bool, parse_none
+from infer_parser import (
+    CantInfer,
+    CantParse,
+    infer,
+    infer_length,
+    parse_bool,
+    parse_none,
+)
 
 
 def test_parse_none() -> None:
@@ -180,8 +188,45 @@ def test_infer_fail() -> None:
     assert isinstance(infer(Optional[typing.Literal[0, 1, 2]]), CantInfer)
 
 
+def test_infer_fail_non_flattenable_types() -> None:
+    """Type hints with ambiguous nargs should fail infer."""
+    assert not isinstance(infer(list[int]), CantInfer)
+    assert isinstance(infer(list[list[int]]), CantInfer)
+    assert not isinstance(infer(dict[tuple[str], tuple[int]]), CantInfer)
+
+    hint = dict[tuple[str, ...], tuple[int]]  # type: ignore
+    assert isinstance(infer(hint), CantInfer)
+    assert isinstance(infer(tuple[dict[str, dict[str, int]]]), CantInfer)
+
+    hint = tuple[tuple[int, ...], ...]  # type: ignore
+    assert isinstance(infer(hint), CantInfer)
+    assert not isinstance(infer(tuple[int, ...]), CantInfer)  # type: ignore
+    assert not isinstance(infer(tuple[tuple[str, int]]), CantInfer)
+
+
 def test_infer_fail_call() -> None:
     """CantInfer objects CantParse."""
     parse = infer(typing.Any)
     assert isinstance(parse, CantInfer)
     assert isinstance(parse(""), CantParse)
+
+
+def test_infer_length() -> None:
+    """infer_length should return # of items in a shell string for the type."""
+    assert infer_length(bool) == 1
+    assert infer_length(int) == 1
+    assert infer_length(Tuple[int, str, float]) == 3
+    assert infer_length(Tuple[int, Tuple[int, Tuple[int, int]]]) == 4
+    assert infer_length(Tuple[int, ...]) == inf
+    assert infer_length(Dict[Tuple[int, str], str]) == inf
+    assert infer_length(List[str]) == inf
+    assert isinstance(infer_length(List[List[str]]), CantInfer)
+    assert isinstance(infer_length(Dict[Tuple[int, ...], Dict[str, int]]),
+                      CantInfer)
+    assert infer_length(Optional[Tuple[int, float]]) == 2
+    assert infer_length(typing.Annotated[Tuple[str, str, str], None]) == 3
+    assert infer_length(Final[List[int]]) == inf
+
+    assert isinstance(infer_length(typing.Callable[..., int]), CantInfer)
+    assert isinstance(infer_length(typing.Literal[True, False]), CantInfer)
+    assert isinstance(infer_length(List[typing.Literal[0]]), CantInfer)

@@ -1,232 +1,344 @@
-"""Test infer_parser.py."""
-
-from math import inf
-import typing
-from typing import Dict, Final, List, Optional, Tuple, Union
-from infer_parser import (
-    CantInfer,
-    CantParse,
-    infer,
-    infer_length,
-    parse_bool,
-    parse_none,
-)
+"""Test infer_parser."""
+import math
+import typing as t
+import pytest
+from infer_parser import make_parser
 
 
-def test_parse_none() -> None:
-    """parse_none should parse '' and 'None' to None and nothing else."""
-    assert parse_none("") is None
-    assert parse_none("None") is None
-    assert parse_none("none") is not None
+def test_make_parser_for_bool() -> None:
+    """Test make_parser(bool)."""
+    parse = make_parser(bool)
+    truthy = (
+        ["1"],
+        ["t"],
+        ["true"],
+        ["y"],
+        ["yes"],
+    )
+    falsy = (
+        ["0"],
+        ["f"],
+        ["false"],
+        ["n"],
+        ["no"],
+    )
+    invalid: tuple[list[str], ...] = (
+        [],
+        [""],
+        [" false "],
+        [" t.r.u.e."],
+        ["true", "false"],
+    )
+
+    assert all(map(parse, truthy))
+    assert not any(map(parse, falsy))
+    for tokens in invalid:
+        with pytest.raises(ValueError):
+            parse(tokens)
 
 
-def test_parse_bool() -> None:
-    """parse_bool should parse only 'true', 'True', '1' to True."""
-    truthy = ["true", "True", "1"]
-    assert all(map(parse_bool, truthy))
+def test_make_parser_for_none() -> None:
+    """Test make_parser(None)."""
+    parse = make_parser(None)
+    assert parse([""]) is None
+    assert parse(["none"]) is None
+    assert parse(["None"]) is None
 
-    falsy = ["", "false", "False", "0"]
-    assert not any(map(parse_bool, falsy))
+    invalid: tuple[list[str], ...] = (
+        [],
+        ["none", "None"],
+        ["0"],
+    )
 
-    assert isinstance(parse_bool("TRue"), CantParse)
-    assert isinstance(parse_bool("false "), CantParse)
-
-
-def test_infer_none() -> None:
-    """infer should return parse_none on None."""
-    assert infer(None) is parse_none
-
-
-def test_infer_bool() -> None:
-    """infer should return parse_bool on bool."""
-    assert infer(bool) is parse_bool
+    for tokens in invalid:
+        with pytest.raises(ValueError):
+            parse(tokens)
 
 
-def test_infer_type() -> None:
-    """infer should wrap basic and class types to return CantParse on error."""
-    parse_float = infer(float)
-    assert parse_float("1.5") == 1.5
-    assert parse_float("9.0") == 9.0
-    assert isinstance(parse_float("test"), CantParse)
+def test_make_parser_for_float() -> None:
+    """Test make_parser(float)."""
+    parse = make_parser(float)
+    assert parse(["1.5"]) == 1.5
+    assert parse(["9.0"]) == 9.0
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse([""])
+    with pytest.raises(ValueError):
+        parse(["test"])
+    with pytest.raises(ValueError):
+        parse(["4", "5"])
 
-    parse_int = infer(int)
-    assert parse_int("-5") == -5
-    assert parse_int("9002") == 9002
-    assert isinstance(parse_int("0.0"), CantParse)
+
+def test_make_parser_for_int() -> None:
+    """Test make_parser(int)."""
+    parse = make_parser(int)
+    assert parse(["-5"]) == -5
+    assert parse(["9002"]) == 9002
+    with pytest.raises(ValueError):
+        parse(["0.0"])
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse([""])
+    with pytest.raises(ValueError):
+        parse(["4", "5"])
 
 
-def test_infer_class_type() -> None:
-    """infer should wrap custom types."""
-    class Ok:  # pylint: disable=too-few-public-methods
-        """Valid parser."""
-        def __init__(self, arg: str):
-            pass
+def test_make_parser_for_str() -> None:
+    """Test make_parser(str)."""
+    parse = make_parser(str)
+    assert parse([""]) == ""
+    assert parse(["hello world"]) == "hello world"
 
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse(["", ""])
+
+
+def test_make_parser_for_class() -> None:
+    """Test make_parser on custom classes."""
     class Err:  # pylint: disable=too-few-public-methods
         """Invalid parser."""
 
-    ok_ = infer(Ok)
-    err = infer(Err)
-    assert isinstance(ok_("test"), Ok)
-    assert isinstance(err("test"), CantParse)
+    parse = make_parser(Err)
+    with pytest.raises(ValueError):
+        parse(["hello"])
+
+    class Ok:  # pylint: disable=too-few-public-methods
+        """Valid parser."""
+        def __init__(self, arg: str):
+            self.arg = arg
+
+    parse = make_parser(Ok)
+    result = parse(["hello"])
+    assert isinstance(result, Ok)
+    assert result.arg == "hello"
 
 
-def test_infer_optional_type() -> None:
-    """infer should work with optional types."""
-    parse = infer(Optional[float])
-    assert parse("1.5") == 1.5
-    assert parse("") is None
-    assert parse("None") is None
-    assert parse("5") == 5.0
+def test_make_parser_for_optional() -> None:
+    """Test make_parser(Optional[...])."""
+    parse = make_parser(t.Optional[float])
+    assert parse(["1.5"]) == 1.5
+    assert parse([""]) is None
+    assert parse(["None"]) is None
+    assert parse(["5"]) == 5.0
+
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse(["0xe"])
 
 
-def test_infer_union_type() -> None:
-    """infer should work with union types."""
-    parse = infer(Union[int, bool])
-    assert not parse("")
-    assert not parse("false")
-    assert not parse("False")
-    assert parse("0") == 0
-    assert parse("42") == 42
-    assert isinstance(parse("e"), CantParse)
+def test_make_parser_for_union() -> None:
+    """Test make_parser(Union[...]).
 
-    zero = infer(Union[bool, int])("0")
-    assert not zero
-    assert isinstance(zero, bool)
+    Order of type parameters matters.
+    """
+    parse = make_parser(t.Union[int, bool])
+    assert parse(["false"]) is False
+    assert parse(["False"]) is False
+    assert parse(["0"]) == 0
+    assert parse(["42"]) == 42
 
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse([""])
+    with pytest.raises(ValueError):
+        parse(["e"])
+    with pytest.raises(ValueError):
+        parse(["true", "true"])
 
-def test_infer_final_type() -> None:
-    """infer should work with final types."""
-    parse = infer(Final[int])
-    assert parse("17") == 17
-
-
-def test_infer_annotated_type() -> None:
-    """infer should work with annotated types."""
-    parse = infer(typing.Annotated[bool, None])
-    assert parse("false") is False
-    assert parse("True") is True
+    zero = make_parser(t.Union[bool, int])("0")
+    assert zero is False
 
 
-def test_infer_fixed_length_tuple_type() -> None:
-    """infer should work with fixed-length tuple types."""
-    parse = infer(tuple[int, float])  # type: ignore
-    result = parse("5 5")
+def test_make_parser_for_annotated() -> None:
+    """Test make_parser on Annotated and Final types."""
+    assert make_parser(t.Final[int]) == make_parser(int)
+    assert make_parser(t.Annotated[bool, None]) == make_parser(bool)
+    assert make_parser(t.Annotated[str, ...]) == make_parser(str)
+    assert make_parser(t.Final[t.Annotated[float, None]]) == make_parser(float)
+
+
+def test_make_parser_for_fixed_length_tuple() -> None:
+    """Test make_parser on fixed-length tuple types."""
+    parse = make_parser(tuple[int, float])  # type: ignore
+    result = parse(["5", "5"])
     assert isinstance(result, tuple)
     assert isinstance(result[0], int)
     assert isinstance(result[1], float)
     assert result == (5, 5.0)
 
-    assert isinstance(parse("5"), CantParse)
-    assert isinstance(parse("5.0 5"), CantParse)
-    assert parse("  0  '1.5'   ") == (0, 1.5)
+    with pytest.raises(ValueError):
+        parse([])
+    with pytest.raises(ValueError):
+        parse([""])
+    with pytest.raises(ValueError):
+        parse(["5"])
+    with pytest.raises(ValueError):
+        parse(["5.0", "5"])
 
-    assert infer(Tuple[bool, bool, bool])("True true 1") == \
-        (True, True, True)
+    assert parse(["0", "1.5"]) == (0, 1.5)
+
+    parse = make_parser(tuple[bool, bool, bool])  # type: ignore
+    assert parse(["true", "True", "1"]) == (True, True, True)
+
+    parse = make_parser(tuple[tuple[int, ...]])  # type: ignore
+    assert parse(["0", "1", "2"]) == ((0, 1, 2),)
 
 
-def test_infer_variable_length_tuple_type() -> None:
-    """infer should work with variable-length tuple types."""
-    parse = infer(tuple[float, ...])  # type: ignore
-    result = parse("0.0 1.1 2.2 '3.3'")
+def test_make_parser_for_variable_length_tuple() -> None:
+    """Test make_parser on variable-length tuple types."""
+    parse = make_parser(tuple[float, ...])  # type: ignore
 
+    assert parse([]) == ()
+    with pytest.raises(ValueError):
+        parse([""])
+
+    result = parse(["0.0", "1.1", "2.2", "3.3"])
     assert isinstance(result, tuple)
     assert all(isinstance(r, float) for r in result)
     assert result == (0.0, 1.1, 2.2, 3.3)
 
-    assert infer(Tuple[bool, ...])("true True 1") == (True, True, True)
-    assert isinstance(infer(Tuple[int, ...])("1 2 3 four"), CantParse)
+    parse = make_parser(tuple[int, ...])  # type: ignore
+    assert parse(["1", "2", "3"]) == (1, 2, 3)
+    with pytest.raises(ValueError):
+        parse(["1", "2", "3", "four"])
 
-    assert isinstance(infer(tuple[...]), CantInfer)  # type: ignore
-    assert isinstance(infer(tuple[..., int]), CantInfer)  # type: ignore
-    assert isinstance(infer(tuple[int, float, ...]), CantInfer)  # type: ignore
+    parse = make_parser(tuple[tuple[int, float], ...])  # type: ignore
+    assert parse(["1", "2", "3", "4"]) == ((1, 2.0), (3, 4.0))
+    with pytest.raises(ValueError):
+        parse(["1", "2", "3"])
 
-
-def test_infer_list_type() -> None:
-    """infer should work with list types."""
-    parse = infer(list[float])
-    result = parse("0.0 1.1 2.2 '3.3'")
-
-    assert isinstance(result, list)
-    assert all(isinstance(r, float) for r in result)
-    assert result == [0.0, 1.1, 2.2, 3.3]
-
-    assert infer(List[bool])("true True 1") == [True, True, True]
-    assert isinstance(infer(List[int])("1 2 3 four"), CantParse)
-
-    assert isinstance(infer(list[...]), CantInfer)  # type: ignore
-    assert isinstance(infer(list[int, float]), CantInfer)  # type: ignore
+    with pytest.raises(TypeError):
+        make_parser(tuple[...])  # type: ignore
+    with pytest.raises(TypeError):
+        make_parser(tuple[..., int])  # type: ignore
+    with pytest.raises(TypeError):
+        make_parser(tuple[int, float, ...])  # type: ignore
 
 
-def test_infer_dict_type() -> None:
-    """infer should work with dict types."""
-    parse = infer(dict[str, float])
-    result = parse("foo 1.0 bar 2.0")
+def test_make_parser_for_list() -> None:
+    """Test make_parser(list[...])."""
+    with pytest.raises(TypeError):
+        make_parser(list[list[int]])
+    with pytest.raises(TypeError):
+        make_parser(list[tuple[int, ...]])  # type: ignore
+    with pytest.raises(TypeError):
+        make_parser(list[int, bool])  # type: ignore
+    with pytest.raises(TypeError):
+        make_parser(list[...])  # type: ignore
+
+    parse = make_parser(list[int])
+    assert parse([]) == []
+    result = parse(["1", "2", "3"])
+    assert all(isinstance(r, int) for r in result)
+    assert result == [1, 2, 3]
+
+    with pytest.raises(ValueError):
+        parse([""])
+
+    parse = make_parser(list[tuple[str, int]])
+    assert parse(["foo", "1", "bar", "2"]) == [("foo", 1), ("bar", 2)]
+    assert parse([]) == []
+
+    with pytest.raises(ValueError):
+        parse(["foo"])
+    with pytest.raises(ValueError):
+        parse(["foo", "1", "bar"])
+    with pytest.raises(ValueError):
+        parse(["foo", "bar"])
+
+
+def test_make_parser_for_dict() -> None:
+    """Test make_parser(dict[...])."""
+    parse = make_parser(dict[str, float])
+    result = parse(["foo", "1.0", "bar", "2.0"])
     assert result == {"foo": 1.0, "bar": 2.0}
 
-    assert infer(Dict[int, int])(" 1  2 '3' 4") == {1: 2, 3: 4}
-    assert isinstance(infer(Dict[int, int])("1 2 3"), CantParse)
-    assert isinstance(infer(Dict[str, float])("1 2 foo bar"), CantParse)
+    parse = make_parser(dict[int, int])
+    assert parse([]) == {}
+    assert parse(["1", "2", "3", "4"]) == {1: 2, 3: 4}
+    with pytest.raises(ValueError):
+        parse(["1", "2", "3"])
+    with pytest.raises(ValueError):
+        parse(["", ""])
+    with pytest.raises(ValueError):
+        parse(["1", "2", "3", "foo"])
 
-    assert isinstance(infer(dict[bool]), CantInfer)  # type: ignore
-    assert isinstance(infer(dict[int, ...]), CantInfer)  # type: ignore
-    assert isinstance(infer(dict[str, str, str]), CantInfer)  # type: ignore
-
-
-def test_infer_nested_type() -> None:
-    """infer should work with nested types."""
-    parse = infer(Final[Union[Union[int, bool], Optional[float]]])
-    assert parse("19.5") == 19.5
-    assert parse("false") is False
-    assert parse("None") is None
-
-
-def test_infer_fail() -> None:
-    """infer should return CantInfer on failure."""
-    assert isinstance(infer(typing.Any), CantInfer)
-    assert isinstance(infer(typing.Callable[..., None]), CantInfer)
-    assert isinstance(infer(Optional[typing.Literal[0, 1, 2]]), CantInfer)
+    unsupported = [
+        dict[bool],  # type: ignore
+        dict[int, ...],  # type: ignore
+        dict[int, list[int]],
+        dict[str, str, str],  # type: ignore
+    ]
+    for type_ in unsupported:
+        with pytest.raises(TypeError):
+            make_parser(type_)
 
 
-def test_infer_fail_non_flattenable_types() -> None:
-    """Type hints with ambiguous nargs should fail infer."""
-    assert not isinstance(infer(list[int]), CantInfer)
-    assert isinstance(infer(list[list[int]]), CantInfer)
-    assert not isinstance(infer(dict[tuple[str], tuple[int]]), CantInfer)
-
-    hint = dict[tuple[str, ...], tuple[int]]  # type: ignore
-    assert isinstance(infer(hint), CantInfer)
-    assert isinstance(infer(tuple[dict[str, dict[str, int]]]), CantInfer)
-
-    hint = tuple[tuple[int, ...], ...]  # type: ignore
-    assert isinstance(infer(hint), CantInfer)
-    assert not isinstance(infer(tuple[int, ...]), CantInfer)  # type: ignore
-    assert not isinstance(infer(tuple[tuple[str, int]]), CantInfer)
-
-
-def test_infer_fail_call() -> None:
-    """CantInfer objects CantParse."""
-    parse = infer(typing.Any)
-    assert isinstance(parse, CantInfer)
-    assert isinstance(parse(""), CantParse)
+def test_make_parser_for_unsupported_type() -> None:
+    """make_parser should throw UnsupportedType on unsupported types."""
+    unsupported = [
+        ...,
+        list[list[int]],
+        tuple[list[int], int],  # type: ignore
+        t.Any,
+        t.Callable[..., t.Any],
+        t.Literal[0, 1, 2],
+    ]
+    for type_ in unsupported:
+        with pytest.raises(TypeError):
+            make_parser(type_)
 
 
-def test_infer_length() -> None:
-    """infer_length should return # of items in a shell string for the type."""
-    assert infer_length(bool) == 1
-    assert infer_length(int) == 1
-    assert infer_length(Tuple[int, str, float]) == 3
-    assert infer_length(Tuple[int, Tuple[int, Tuple[int, int]]]) == 4
-    assert infer_length(Tuple[int, ...]) == inf
-    assert infer_length(Dict[Tuple[int, str], str]) == inf
-    assert infer_length(List[str]) == inf
-    assert isinstance(infer_length(List[List[str]]), CantInfer)
-    assert isinstance(infer_length(Dict[Tuple[int, ...], Dict[str, int]]),
-                      CantInfer)
-    assert infer_length(Optional[Tuple[int, float]]) == 2
-    assert infer_length(typing.Annotated[Tuple[str, str, str], None]) == 3
-    assert infer_length(Final[List[int]]) == inf
+def test_make_parser_for_nested_type() -> None:
+    """Test make_parser on nested types."""
+    supported = [
+        list[int],
+        dict[tuple[str, int], tuple[str, tuple[int, float]]],
+        tuple[int, dict[str, str]],  # type: ignore
+        tuple[str, ...],  # type: ignore
+        tuple[tuple[tuple[str, int]], list[int]],  # type: ignore
+    ]
+    for type_ in supported:
+        make_parser(type_)
 
-    assert isinstance(infer_length(typing.Callable[..., int]), CantInfer)
-    assert isinstance(infer_length(typing.Literal[True, False]), CantInfer)
-    assert isinstance(infer_length(List[typing.Literal[0]]), CantInfer)
+    invalid = [
+        list[int, float],  # type: ignore
+        tuple[...],  # type: ignore
+        tuple[str, str, ...],  # type: ignore
+    ]
+    unsupported = [
+        list[list[int]],
+        list[t.Literal[0]],
+        dict[tuple[str, ...], tuple[int]],  # type: ignore
+        t.Callable[..., int],
+        t.Literal[True, False],
+        tuple[dict[str, str], int],  # type: ignore
+        tuple[tuple[int, ...], ...],  # type: ignore
+    ]
+    for type_ in invalid + unsupported:
+        with pytest.raises(TypeError):
+            make_parser(type_)
+
+
+def test_make_parser_length() -> None:
+    """Test make_parser result.length."""
+    cases = {
+        bool: 1,
+        dict[tuple[int, str], str]: math.inf,
+        int: 1,
+        list[str]: math.inf,
+        t.Annotated[tuple[str, str, str], None]: 3,  # type: ignore
+        t.Final[list[int]]: math.inf,
+        t.Optional[tuple[int, float]]: math.inf,  # type: ignore
+        tuple[int, ...]: math.inf,  # type: ignore
+        tuple[int, str, float]: 3,  # type: ignore
+        tuple[int, tuple[int, tuple[int, int]]]: 4,  # type: ignore
+    }
+    for type_, expected in cases.items():
+        assert make_parser(type_).length == expected

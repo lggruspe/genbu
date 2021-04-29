@@ -1,9 +1,8 @@
-"""Shell arguments parser."""
+"""Make shell arguments parsers from type hints."""
 
 from collections import abc
 import dataclasses
 import functools
-import math
 import types
 import typing as t
 
@@ -21,7 +20,7 @@ class Parser:
     """Arguments parser."""
     hint: t.Any
     function: t.Callable[[list[str]], t.Any]
-    length: t.Union[int, float] = 1
+    length: t.Union[int, t.Literal["*"]] = 1
 
     def __call__(self, tokens: abc.Sequence[str]) -> t.Any:
         """Run parsing function on list of tokens."""
@@ -60,7 +59,7 @@ def make_union_parser(hint: t.Any) -> Parser:
     """Return union of parsers of hint args.
 
     Note: result length is an integer if every arg has the same parser.length.
-    Otherwise, it is math.inf.
+    Otherwise, it is "*".
     """
     origin, args = destructure(hint)
     assert origin is t.Union
@@ -75,7 +74,7 @@ def make_union_parser(hint: t.Any) -> Parser:
         raise CantParse(hint, tokens)
 
     lengths = set(p.length for p in parsers)
-    length = lengths.pop() if len(lengths) == 1 else math.inf
+    length = lengths.pop() if len(lengths) == 1 else "*"
     return Parser(hint, function, length)
 
 
@@ -86,19 +85,18 @@ def make_list_parser(hint: t.Any) -> Parser:
     if len(args) != 1:
         raise UnsupportedType(hint)
     parse = make_parser(args[0])
-    if parse.length == math.inf:
+    if parse.length == "*":
         raise UnsupportedType(hint)
 
     def function(tokens: abc.Sequence[str]) -> list[t.Any]:
         assert isinstance(parse.length, int)
-
         if len(tokens) % parse.length != 0:
             raise CantParse(hint, tokens)
         return [
             parse(tokens[i:i + parse.length])
             for i in range(0, len(tokens), parse.length)
         ]
-    return Parser(hint, function, math.inf)
+    return Parser(hint, function, "*")
 
 
 def make_dict_parser(hint: t.Any) -> Parser:
@@ -110,9 +108,7 @@ def make_dict_parser(hint: t.Any) -> Parser:
 
     parse_key = make_parser(args[0])
     parse_val = make_parser(args[1])
-    if parse_key.length == math.inf:
-        raise UnsupportedType(hint)
-    if parse_val.length == math.inf:
+    if "*" in (parse_key.length, parse_val.length):
         raise UnsupportedType(hint)
 
     assert isinstance(parse_key.length, int)
@@ -132,7 +128,7 @@ def make_dict_parser(hint: t.Any) -> Parser:
             vals.append(parse_val(tokens[i + parse_key.length:i + length]))
         return dict(zip(keys, vals))
 
-    return Parser(hint, function, math.inf)
+    return Parser(hint, function, "*")
 
 
 def make_variable_length_tuple_parser(hint: t.Any) -> Parser:
@@ -144,9 +140,8 @@ def make_variable_length_tuple_parser(hint: t.Any) -> Parser:
         raise UnsupportedType(hint)
 
     parse = make_parser(args[0])
-    if parse.length == math.inf:
+    if parse.length == "*":
         raise UnsupportedType(hint)
-    assert isinstance(parse.length, int)
 
     def function(tokens: abc.Sequence[str]) -> tuple[t.Any, ...]:
         assert isinstance(parse.length, int)
@@ -154,7 +149,7 @@ def make_variable_length_tuple_parser(hint: t.Any) -> Parser:
             raise CantParse(hint, tokens)
         return tuple(parse(tokens[i:i + parse.length])
                      for i in range(0, len(tokens), parse.length))
-    return Parser(hint, function, math.inf)
+    return Parser(hint, function, "*")
 
 
 def make_fixed_length_tuple_parser(hint: t.Any) -> Parser:
@@ -168,7 +163,7 @@ def make_fixed_length_tuple_parser(hint: t.Any) -> Parser:
     assert ... not in args
     parsers = [make_parser(arg) for arg in args]
     lengths = [p.length for p in parsers]
-    if any(length == math.inf for length in lengths[:-1]):
+    if "*" in lengths[:-1]:
         raise UnsupportedType(hint)
 
     def function(tokens: abc.Sequence[str]) -> tuple[t.Any, ...]:
@@ -180,7 +175,11 @@ def make_fixed_length_tuple_parser(hint: t.Any) -> Parser:
             start += parse.length
         value.append(parsers[-1](tokens[start:]))
         return tuple(value)
-    return Parser(hint, function, sum(lengths))
+
+    length: t.Union[int, t.Literal["*"]] = "*"
+    if lengths[-1] != "*":
+        length = sum(lengths)
+    return Parser(hint, function, length)
 
 
 def make_tuple_parser(hint: t.Any) -> Parser:
@@ -251,3 +250,6 @@ def make_parser(hint: t.Any) -> Parser:
     if (maker := PARSER_MAKERS.get(origin)) is not None:
         return maker(hint)
     raise UnsupportedType(hint)
+
+
+__all__ = ["CantParse", "UnsupportedType", "make_parser"]

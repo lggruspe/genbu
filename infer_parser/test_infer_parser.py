@@ -1,5 +1,4 @@
 """Test infer_parser."""
-import math
 import typing as t
 import pytest
 from infer_parser import make_parser
@@ -330,13 +329,13 @@ def test_make_parser_length() -> None:
     """Test make_parser result.length."""
     cases = {
         bool: 1,
-        dict[tuple[int, str], str]: math.inf,
+        dict[tuple[int, str], str]: "*",
         int: 1,
-        list[str]: math.inf,
+        list[str]: "*",
         t.Annotated[tuple[str, str, str], None]: 3,  # type: ignore
-        t.Final[list[int]]: math.inf,
-        t.Optional[tuple[int, float]]: math.inf,  # type: ignore
-        tuple[int, ...]: math.inf,  # type: ignore
+        t.Final[list[int]]: "*",
+        t.Optional[tuple[int, float]]: "*",  # type: ignore
+        tuple[int, ...]: "*",  # type: ignore
         tuple[int, str, float]: 3,  # type: ignore
         tuple[int, tuple[int, tuple[int, int]]]: 4,  # type: ignore
     }

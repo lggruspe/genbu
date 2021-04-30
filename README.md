@@ -6,29 +6,44 @@ infer-parser
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/infer_parser)](https://pypi.org/project/infer_parser/)
 [![GitHub](https://img.shields.io/github/license/lggruspe/infer-parser)](./LICENSE)
 
-infer-parser is a Python library for inferring shell parsers from type hints.
+infer-parser is a Python library for making shell argument parsers from type hints.
+
+Install
+-------
+
+```bash
+pip install infer-parser
+```
 
 Example
 -------
 
 ```python
-from typing import Optional
-from infer_parser import infer, CantParse
+import typing as t
+from infer_parser import make_parser
 
-parse = infer(Optional[int])
+parse = make_parser(t.Optional[int])
 
-assert parse("5") == 5
-assert parse("-11") == -11
-assert parse("") is None
-assert parse("None") is None
-assert isinstance(parse("12.13"), CantParse)
+assert parse(["5"]) == 5
+assert parse(["-11"]) == -11
+assert parse([""]) is None
+assert parse(["None"]) is None
 
-parse_tuple = infer(tuple[float, ...])
+try:
+    parse(["12.13"])
+except ValueError:
+    print("not an Optional[int]")
 
-assert parse_tuple("1.5") == (1.5,)
-assert parse_tuple("0.0  4.2 -1") == (0.0, 4.2, -1.0)
-assert parse_tuple("") == ()
-assert isinstance(parse_tuple("Hello, world!"), CantParse)
+parse_tuple = make_parser(tuple[float, ...])
+
+assert parse_tuple(["1.5"]) == (1.5,)
+assert parse_tuple(["0.0", "4.2", "-1"]) == (0.0, 4.2, -1.0)
+assert parse_tuple([]) == ()
+
+try:
+    parse(["Hello, world!"])
+except ValueError:
+    print("not a tuple[float, ...]")
 ```
 
 Limitations
@@ -37,11 +52,13 @@ Limitations
 infer-parser cannot always infer a parser.
 
 ```python
-from typing import Callable
-from infer_parser import infer, CantInfer
+import typing as t
+from infer_parser import make_parser
 
-parse = infer(Callable[..., int])  # not supported
-assert isinstance(parse, CantInfer)
+try:
+    make_parser(t.Callable[..., int])
+except TypeError:
+    print("not supported")
 ```
 
 License

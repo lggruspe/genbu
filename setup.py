@@ -5,10 +5,10 @@ with open("README.md") as file:
 
 setuptools.setup(
     name="infer_parser",
-    version="0.0.1",
+    version="0.1.0",
     author="Levi Gruspe",
     author_email="mail.levig@gmail.com",
-    description="Library for generating shell parsers from type hints",
+    description="Make shell argument parsers from type hints",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lggruspe/infer-parser",

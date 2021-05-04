@@ -5,7 +5,7 @@ with open("README.md") as file:
 
 setuptools.setup(
     name="infer_parser",
-    version="0.1.0",
+    version="0.1.1",
     author="Levi Gruspe",
     author_email="mail.levig@gmail.com",
     description="Make shell argument parsers from type hints",

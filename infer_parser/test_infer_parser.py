@@ -118,16 +118,32 @@ def test_make_parser_for_class() -> None:
 
 def test_make_parser_for_optional() -> None:
     """Test make_parser(Optional[...])."""
-    parse = make_parser(t.Optional[float])
+    parse = make_parser(t.Union[float, None])
     assert parse(["1.5"]) == 1.5
+    assert parse([]) is None
     assert parse([""]) is None
     assert parse(["None"]) is None
     assert parse(["5"]) == 5.0
 
     with pytest.raises(ValueError):
-        parse([])
+        parse(["0xe"])
+    with pytest.raises(ValueError):
+        parse(["5", "6"])
+
+
+def test_make_parser_for_optional_with_none_first() -> None:
+    """Test make_parser(Union[None, ...])."""
+    parse = make_parser(t.Union[None, float])
+    assert parse(["1.5"]) == 1.5
+    assert parse([]) is None
+    assert parse([""]) is None
+    assert parse(["None"]) is None
+    assert parse(["5"]) == 5.0
+
     with pytest.raises(ValueError):
         parse(["0xe"])
+    with pytest.raises(ValueError):
+        parse(["5", "6"])
 
 
 def test_make_parser_for_union() -> None:
@@ -288,6 +304,9 @@ def test_make_parser_for_unsupported_type() -> None:
         t.Any,
         t.Callable[..., t.Any],
         t.Literal[0, 1, 2],
+        t.Optional[list[str]],
+        t.Optional[tuple[str, str]],  # type: ignore
+        t.Optional[dict[str, str]],
     ]
     for type_ in unsupported:
         with pytest.raises(TypeError):
@@ -319,6 +338,7 @@ def test_make_parser_for_nested_type() -> None:
         t.Literal[True, False],
         tuple[dict[str, str], int],  # type: ignore
         tuple[tuple[int, ...], ...],  # type: ignore
+        t.Optional[tuple[float, int]],  # type: ignore
     ]
     for type_ in invalid + unsupported:
         with pytest.raises(TypeError):
@@ -334,7 +354,9 @@ def test_make_parser_length() -> None:
         list[str]: "*",
         t.Annotated[tuple[str, str, str], None]: 3,  # type: ignore
         t.Final[list[int]]: "*",
-        t.Optional[tuple[int, float]]: "*",  # type: ignore
+        t.Optional[int]: "?",
+        t.Union[None, float]: "?",
+        t.Union[int, None]: "?",
         tuple[int, ...]: "*",  # type: ignore
         tuple[int, str, float]: 3,  # type: ignore
         tuple[int, tuple[int, tuple[int, int]]]: 4,  # type: ignore

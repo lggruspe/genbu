@@ -15,12 +15,17 @@ class UnsupportedType(TypeError):
     """Unsupported type."""
 
 
+# ? means 0 or 1
+# * means any number
+Length = t.Union[int, t.Literal["?", "*"]]
+
+
 @dataclasses.dataclass
 class Parser:
     """Arguments parser."""
     hint: t.Any
     function: t.Callable[[list[str]], t.Any]
-    length: t.Union[int, t.Literal["*"]] = 1
+    length: Length = 1
 
     def __call__(self, tokens: abc.Sequence[str]) -> t.Any:
         """Run parsing function on list of tokens."""
@@ -55,6 +60,29 @@ def make_annotated_parser(hint: t.Any) -> Parser:
     return make_parser(args[0])
 
 
+def make_optional_parser(hint: t.Any) -> Parser:
+    """Make Optional[...] parser."""
+    origin, args = destructure(hint)
+    assert origin is t.Union
+    assert len(args) == 2
+    assert type(None) in args
+
+    parsers = [make_parser(arg) for arg in args]
+    if any(p.length not in ("?", 1) for p in parsers):
+        raise UnsupportedType(hint)
+
+    def function(tokens: abc.Sequence[str]) -> t.Any:
+        if len(tokens) == 0:
+            return None
+        for parse in parsers:
+            try:
+                return parse(tokens)
+            except Exception:  # pylint: disable=broad-except
+                pass
+        raise CantParse(hint, tokens)
+    return Parser(hint, function, "?")
+
+
 def make_union_parser(hint: t.Any) -> Parser:
     """Return union of parsers of hint args.
 
@@ -63,6 +91,8 @@ def make_union_parser(hint: t.Any) -> Parser:
     """
     origin, args = destructure(hint)
     assert origin is t.Union
+    if len(args) == 2 and type(None) in args:
+        return make_optional_parser(hint)
     parsers = [make_parser(arg) for arg in args]
 
     def function(tokens: abc.Sequence[str]) -> t.Any:
@@ -176,7 +206,7 @@ def make_fixed_length_tuple_parser(hint: t.Any) -> Parser:
         value.append(parsers[-1](tokens[start:]))
         return tuple(value)
 
-    length: t.Union[int, t.Literal["*"]] = "*"
+    length: Length = "*"
     if lengths[-1] != "*":
         length = sum(lengths)
     return Parser(hint, function, length)

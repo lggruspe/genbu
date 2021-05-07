@@ -300,6 +300,7 @@ def test_make_parser_for_unsupported_type() -> None:
     unsupported = [
         ...,
         list[list[int]],
+        tuple[()],  # type: ignore
         tuple[list[int], int],  # type: ignore
         t.Any,
         t.Callable[..., t.Any],
@@ -307,6 +308,21 @@ def test_make_parser_for_unsupported_type() -> None:
         t.Optional[list[str]],
         t.Optional[tuple[str, str]],  # type: ignore
         t.Optional[dict[str, str]],
+        t.Tuple[()],
+    ]
+    for type_ in unsupported:
+        with pytest.raises(TypeError):
+            make_parser(type_)
+
+
+def test_make_parser_for_empty_tuple() -> None:
+    """Test make_parser(...) should fail."""
+    unsupported = [
+        (),
+        list[()],  # type: ignore
+        t.Tuple[()],
+        tuple[(), ()],  # type: ignore
+        tuple[()],  # type: ignore
     ]
     for type_ in unsupported:
         with pytest.raises(TypeError):
@@ -336,9 +352,11 @@ def test_make_parser_for_nested_type() -> None:
         dict[tuple[str, ...], tuple[int]],  # type: ignore
         t.Callable[..., int],
         t.Literal[True, False],
+        tuple[()],  # type: ignore
         tuple[dict[str, str], int],  # type: ignore
         tuple[tuple[int, ...], ...],  # type: ignore
         t.Optional[tuple[float, int]],  # type: ignore
+        t.Tuple[()],
     ]
     for type_ in invalid + unsupported:
         with pytest.raises(TypeError):

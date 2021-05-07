@@ -193,7 +193,7 @@ def make_fixed_length_tuple_parser(hint: t.Any) -> Parser:
     assert ... not in args
     parsers = [make_parser(arg) for arg in args]
     lengths = [p.length for p in parsers]
-    if "*" in lengths[:-1]:
+    if not lengths or "*" in lengths[:-1]:
         raise UnsupportedType(hint)
 
     def function(tokens: abc.Sequence[str]) -> tuple[t.Any, ...]:

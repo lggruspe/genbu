@@ -43,6 +43,5 @@ class Router:
         cli = self.routes.get(subcommand)
         if cli is None:
             raise InvalidRoute
-
         args = argv[len(subcommand):]
         return cli(args)

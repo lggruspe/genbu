@@ -1,5 +1,7 @@
+from functools import partial
 import sys
-from tortoise import forward, merge, read, combinators as comb
+from tortoise import Merger, Reader, forward, combinators as comb
+from tortoise.cli import make_cli
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -9,11 +11,16 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-opts, args = read(sys.argv[1:], "g", g=1, greeting=1)
-opts = merge(opts, "greeting", "g", using=lambda _, b: b)
-opts = comb.parse_opts(dict(opts), greeting=comb.one(str))
-args = comb.parse_args(args, names=comb.repeat(comb.one(str), then=tuple))
-optargs = {**opts, **args}
+reader = Reader("g", g=1, greeting=1)
+merger = Merger()
+merger.add("greeting", "g", using=lambda _, b: b)
 
+cli = make_cli(
+    reader.read,
+    merger.merge,
+    partial(comb.parse_opts, greeting=comb.one(str)),
+    partial(comb.parse_args, names=comb.repeat(comb.one(str), then=tuple)),
+)
+optargs = cli(sys.argv[1:])
 print("optargs", optargs)
 print(forward(optargs, hello))

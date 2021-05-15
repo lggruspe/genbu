@@ -1,7 +1,5 @@
-from functools import partial
 import sys
-from tortoise import Merger, Reader, forward, combinators as comb
-from tortoise.cli import make_cli
+from tortoise import Cli, ParamsParser, Renamer, forward, combinators as comb
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -11,16 +9,16 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-reader = Reader("g", g=1, greeting=1)
-merger = Merger()
-merger.add("greeting", "g", using=lambda _, b: b)
+parser = ParamsParser({
+    "-g": comb.one(str),
+    "--greeting": comb.one(str),
+    "names": comb.repeat(comb.one(str), then=tuple),
+})
 
-cli = make_cli(
-    reader.read,
-    merger.merge,
-    partial(comb.parse_opts, greeting=comb.one(str)),
-    partial(comb.parse_args, names=comb.repeat(comb.one(str), then=tuple)),
-)
+renamer = Renamer()
+renamer.add("greeting", "-g", "--greeting", resolve=lambda _, b: b)
+
+cli = Cli(parser, renamer)
 optargs = cli(sys.argv[1:])
 print("optargs", optargs)
 print(forward(optargs, hello))

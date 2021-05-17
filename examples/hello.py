@@ -19,6 +19,7 @@ renamer = Renamer()
 renamer.add("greeting", "-g", "--greeting", resolve=lambda _, b: b)
 
 cli = Cli(parser, renamer)
-optargs = cli(sys.argv[1:])
-print("optargs", optargs)
-print(forward(optargs, hello))
+
+if __name__ == "__main__":
+    optargs = cli(sys.argv[1:])
+    print(forward(optargs, hello))

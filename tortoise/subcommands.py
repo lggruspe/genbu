@@ -8,7 +8,7 @@ Subcommand = t.Tuple[str, ...]
 
 
 def get_subcommand(argv: t.Sequence[str],
-                   subcommands: t.Sequence[Subcommand],
+                   subcommands: t.Iterable[Subcommand],
                    ) -> Subcommand:
     """Get subcommand from argv.
 
@@ -30,18 +30,20 @@ class Router:
     def __init__(self) -> None:
         self.routes: dict[Subcommand, Cli] = {}
 
-    def add(self, *names: str, cli: Cli) -> None:
+    def add(self, cli: Cli, *names: str) -> None:
         """Add CLI route.
 
         Overwrite route if one already exists.
         """
         self.routes[names] = cli
 
-    def get_optargs(self, argv: t.Sequence[str]) -> dict[str, t.Any]:
+    def __call__(self,
+                 argv: t.Sequence[str],
+                 ) -> tuple[Subcommand, dict[str, t.Any]]:
         """Return CLI optargs."""
         subcommand = get_subcommand(argv, tuple(self.routes.keys()))
         cli = self.routes.get(subcommand)
         if cli is None:
-            raise InvalidRoute
+            raise InvalidRoute(subcommand)
         args = argv[len(subcommand):]
-        return cli(args)
+        return subcommand, cli(args)

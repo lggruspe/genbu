@@ -84,18 +84,17 @@ def repeat(parser: Parser, then: ThenFunction = list) -> Parser:
     return Parser(_parser)
 
 
+def emit(value: t.Any) -> Parser:
+    """Return Parser that just emits value."""
+    return Parser(lambda _: Result(value))
+
+
 @Parser
 def eof(tokens: Tokens) -> Result:
     """Check if there are no tokens left."""
     if tokens:
         raise CantParse
     return Result(None, empty=True)
-
-
-@Parser
-def none(_: Tokens) -> Result:
-    """Return None."""
-    return Result(None)
 
 
 @Parser

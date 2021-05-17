@@ -5,8 +5,8 @@ from tortoise.subcommands import Router
 from examples import cat, hello
 
 parser = ParamsParser({
-    "-h": comb.none,
-    "--help": comb.none,
+    "-h": comb.emit(True),
+    "--help": comb.emit(True),
 })
 
 renamer = Renamer()

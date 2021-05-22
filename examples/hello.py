@@ -10,9 +10,9 @@ def hello(*names: str, greeting: str = "Hello") -> str:
 
 
 parser = ParamsParser({
-    "-g": comb.one(str),
-    "--greeting": comb.one(str),
-    "names": comb.repeat(comb.one(str), then=tuple),
+    "-g": comb.One(str),
+    "--greeting": comb.One(str),
+    "names": comb.Repeat(comb.One(str), then=tuple),
 })
 
 renamer = Renamer()

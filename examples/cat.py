@@ -9,8 +9,8 @@ def cat(path: Path) -> str:
 
 
 parser = ParamsParser({
-    "-p": comb.one(Path),
-    "--path": comb.one(Path),
+    "-p": comb.One(Path),
+    "--path": comb.One(Path),
 })
 
 renamer = Renamer()

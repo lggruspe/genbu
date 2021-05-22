@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-from tortoise import Cli, ParamsParser, forward, Renamer, combinators as comb
+from tortoise import Param, ParamsParser, forward, combinators as comb
 
 
 def cat(path: Path) -> str:
@@ -8,15 +8,9 @@ def cat(path: Path) -> str:
     return path.read_text()
 
 
-parser = ParamsParser({
-    "-p": comb.One(Path),
-    "--path": comb.One(Path),
-})
-
-renamer = Renamer()
-renamer.add("path", "-p", "--path", resolve=lambda _, b: b)
-
-cli = Cli(parser, renamer)
+cli = ParamsParser([
+    Param("path", ["-p", "--path"], comb.One(Path), lambda _, b: b),
+])
 
 if __name__ == "__main__":
     optargs = cli(sys.argv[1:])

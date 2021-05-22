@@ -1,5 +1,5 @@
 import sys
-from tortoise import Cli, ParamsParser, Renamer, forward, combinators as comb
+from tortoise import Param, ParamsParser, forward, combinators as comb
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -9,16 +9,10 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-parser = ParamsParser({
-    "-g": comb.One(str),
-    "--greeting": comb.One(str),
-    "names": comb.Repeat(comb.One(str), then=tuple),
-})
-
-renamer = Renamer()
-renamer.add("greeting", "-g", "--greeting", resolve=lambda _, b: b)
-
-cli = Cli(parser, renamer)
+cli = ParamsParser([
+    Param("greeting", ["-g", "--greeting"], comb.One(str), lambda _, b: b),
+    Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
+])
 
 if __name__ == "__main__":
     optargs = cli(sys.argv[1:])

@@ -1,7 +1,6 @@
 """Tortoise CLI."""
 
-from .cli import Cli
-from .params import ParamsParser, Renamer, UnknownOption
+from .params import Param, ParamsParser, UnknownOption
 from .forward import forward
 
-__all__ = ["Cli", "ParamsParser", "Renamer", "UnknownOption", "forward"]
+__all__ = ["Param", "ParamsParser", "UnknownOption", "forward"]

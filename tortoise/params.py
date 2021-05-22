@@ -35,15 +35,38 @@ def partition(argv: t.Sequence[str]) -> tuple[list[str], list[list[str]]]:
     return args, opts
 
 
+Resolver = t.Callable[[t.Any, t.Any], t.Any]
+
+
+class Param:  # pylint: disable=too-few-public-methods
+    """CLI parameter descriptor."""
+    def __init__(self,
+                 name: str,
+                 optargs: t.Optional[list[str]] = None,
+                 parse: comb.Parser = comb.One(str),
+                 resolve: Resolver = lambda _, b: b):
+        if optargs is None:
+            optargs = [name]
+
+        self.name = name
+        self.optargs = optargs
+        self.parse = parse
+        self.resolve = resolve
+
+
 class ParamsParser:
     """Argv parser."""
-    def __init__(self, parsers: dict[str, comb.Parser]):
-        self.opt_parsers = {
-            k: v for k, v in parsers.items() if k.startswith("-")
-        }
-        self.arg_parsers = [
-            (k, v) for k, v in parsers.items() if not k.startswith("-")
-        ]
+    def __init__(self, params: list[Param]):
+        self.rename = Renamer(params)
+        self.options = {}
+        self.arguments = {}
+
+        for param in params:
+            for optarg in param.optargs:
+                if optarg.startswith("-"):
+                    self.options[optarg] = param
+                else:
+                    self.arguments[optarg] = param
 
     def expand(self, prefix: str) -> str:
         """Expand prefix to long option.
@@ -53,11 +76,11 @@ class ParamsParser:
         Also raise error if the prefix is ambiguous.
         """
         if not prefix.startswith("--"):
-            if prefix in self.opt_parsers:
+            if prefix in self.options:
                 return prefix
             raise UnknownOption(prefix)
 
-        candidates = [o for o in self.opt_parsers if o.startswith(prefix)]
+        candidates = [o for o in self.options if o.startswith(prefix)]
         if len(candidates) != 1:
             raise UnknownOption(prefix)
         return candidates[0]
@@ -71,15 +94,16 @@ class ParamsParser:
         Return expanded option name, parsed value and unparsed tokens."""
         assert prefix.startswith("-")
         name = self.expand(prefix)
-        parse = self.opt_parsers.get(name)
-        if parse is None:
+        param = self.options.get(name)
+        if param is None:
             raise UnknownOption(name)
+        parse = param.parse
 
         deque = collections.deque(args)
         value = parse(deque).value
         return (name, value, list(deque))
 
-    def __call__(self, argv: t.Sequence[str]) -> list[tuple[str, t.Any]]:
+    def __call__(self, argv: t.Sequence[str]) -> dict[str, t.Any]:
         """Parse options and arguments from argv.
 
         Parse argv in two passes.
@@ -104,15 +128,12 @@ class ParamsParser:
             args.extend(unused)
 
         deque = collections.deque(args)
-        for name, parse in self.arg_parsers:
-            optargs.append((name, parse(deque).value))
+        for name, param in self.arguments.items():
+            optargs.append((name, param.parse(deque).value))
 
         if deque:
             raise UnknownOption(deque[0])
-        return optargs
-
-
-Resolver = t.Callable[[t.Any, t.Any], t.Any]
+        return self.rename(optargs)
 
 
 def rename(optargs: list[tuple[str, t.Any]],
@@ -134,26 +155,18 @@ def rename(optargs: list[tuple[str, t.Any]],
     return renamed
 
 
-class Renamer:
+class Renamer:  # pylint: disable=too-few-public-methods
     """Options and arguments renamer."""
-    def __init__(self) -> None:
-        self.queue: list[tuple[str, set[str], Resolver]] = []
-
-    def add(self,
-            name: str,
-            *names: str,
-            resolve: Resolver = lambda _, b: b,
-            ) -> "Renamer":
-        """Add rename task.
-
-        All the options and arguments in names are renamed to the value of
-        `name`. The resolve callback is used to resolve name conflicts.
-        """
-        self.queue.append((name, set(names), resolve))
-        return self
+    def __init__(self, params: list[Param]):
+        self.params = params
 
     def __call__(self, optargs: list[tuple[str, t.Any]]) -> dict[str, t.Any]:
         """Rename parameters and convert into dict."""
-        for name, names, resolve in self.queue:
-            optargs = rename(optargs, name, names, resolve)
+        for param in self.params:
+            optargs = rename(
+                optargs,
+                param.name,
+                set(param.optargs),
+                param.resolve
+            )
         return dict(optargs)

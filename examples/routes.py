@@ -1,18 +1,12 @@
 import sys
-from tortoise import Cli, ParamsParser, Renamer, forward, combinators as comb
+from tortoise import Param, ParamsParser, forward, combinators as comb
 from tortoise.subcommands import Router
 
 from examples import cat, hello
 
-parser = ParamsParser({
-    "-h": comb.Emit(True),
-    "--help": comb.Emit(True),
-})
-
-renamer = Renamer()
-renamer.add("help", "-h", "--help", resolve=lambda _, b: b)
-
-cli = Cli(parser, renamer)
+cli = ParamsParser([
+    Param("help", ["-h", "--help"], comb.Emit(True), lambda _, b: b)
+])
 
 router = Router()
 router.add(cat.cli, "cat")

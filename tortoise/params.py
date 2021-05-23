@@ -1,6 +1,7 @@
 """Params parser."""
 
 import collections
+import textwrap
 import typing as t
 
 from . import combinators as comb
@@ -38,20 +39,30 @@ def partition(argv: t.Sequence[str]) -> tuple[list[str], list[list[str]]]:
 Resolver = t.Callable[[t.Any, t.Any], t.Any]
 
 
-class Param:  # pylint: disable=too-few-public-methods
+class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
     """CLI parameter descriptor."""
     def __init__(self,
                  name: str,
                  optargs: t.Optional[list[str]] = None,
                  parse: comb.Parser = comb.One(str),
-                 resolve: Resolver = lambda _, b: b):
+                 resolve: Resolver = lambda _, b: b,
+                 description: t.Optional[str] = None,
+                 arg_description: t.Optional[str] = None):
         if optargs is None:
             optargs = [name]
+        if description is not None:
+            description = textwrap.dedent(description.strip())
 
         self.name = name
         self.optargs = optargs
         self.parse = parse
         self.resolve = resolve
+        self.description = description
+        self.arg_description = arg_description
+
+    def is_option(self) -> bool:
+        """Check if Param is an option."""
+        return all(p.startswith("-") for p in self.optargs)
 
 
 class ParamsParser:

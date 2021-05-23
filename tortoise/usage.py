@@ -2,6 +2,10 @@
 
 import shutil
 import textwrap
+import typing as t
+
+from . import combinators as comb
+from .params import Param
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -29,18 +33,41 @@ def command_block(name: str, commands: dict[str, str]) -> str:
     return result
 
 
-def options_block(*options: tuple[tuple[str, ...], str, str]) -> str:
-    """Construct options info string."""
-    result = "options:\n"
-    for names, args, desc in options:
-        if desc:
-            result += "\n"
-        result += "    , ".join(
-            sorted(names, key=lambda s: (s.startswith("--"), s))
-        )
-        if args:
-            result += f" {args}"
-        result += "\n"
-        if desc:
-            result += textwrap.indent(desc, " " * 8) + "\n"
+def render_option(param: Param) -> t.Optional[str]:
+    """Render option info string.
+
+    Return None if param is not an option.
+    """
+    if not param.is_option():
+        return None
+
+    flags = ", ".join(
+        sorted(param.optargs, key=lambda s: (s.startswith("--"), s))
+    )
+
+    arg: t.Optional[str] = param.parse.pretty()
+    if isinstance(param.parse, comb.Emit) or arg in ("", "<''>"):
+        arg = None
+    if param.arg_description is not None:
+        arg = param.arg_description
+
+    result = flags
+    if arg:
+        result += f" {arg}"
+    if param.description:
+        result += f"\n{textwrap.indent(param.description, '    ')}\n"
     return result
+
+
+def options_block(*params: Param) -> str:
+    """Construct options info block."""
+    options = filter(bool, map(render_option, params))
+
+    result = "options:\n"
+    for i, option in enumerate(options):
+        if option is not None:
+            if option.count("\n") > 0 and i > 0:
+                result += "\n"
+            result += textwrap.indent(option, "    ")
+            result += "\n"
+    return result.strip()

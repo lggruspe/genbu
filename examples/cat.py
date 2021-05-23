@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 from tortoise import Param, ParamsParser, forward, combinators as comb
+from tortoise.usage import usage
 
 
 def cat(path: Path) -> str:
@@ -13,5 +14,8 @@ cli = ParamsParser([
 ])
 
 if __name__ == "__main__":
-    optargs = cli(sys.argv[1:])
-    print(forward(optargs, cat))
+    try:
+        optargs = cli(sys.argv[1:])
+        print(forward(optargs, cat))
+    except Exception:
+        usage(cat.__name__, cat.__doc__, cli)

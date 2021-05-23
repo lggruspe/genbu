@@ -5,7 +5,7 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
-from .params import Param
+from .params import Param, ParamsParser
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -71,3 +71,27 @@ def options_block(*params: Param) -> str:
             result += textwrap.indent(option, "    ")
             result += "\n"
     return result.strip()
+
+
+def render_example(program: str, params_parser: ParamsParser) -> str:
+    """Render usage example."""
+    args = []
+    for param in params_parser.params:
+        if not param.is_option():
+            args.append(f"<{param.name}:{param.parse!s}>")
+
+    result = f"usage: {program} "
+    if params_parser.options:
+        result += "[options]"
+    if args:
+        result += " "
+        result += " ".join(args)
+    return result
+
+
+def usage(program: str, description: str, params_parser: ParamsParser) -> None:
+    """Construct and print usage string."""
+    result = render_example(program, params_parser)
+    result += f"\n\n{textwrap.dedent(description.strip())}\n\n"
+    result += options_block(*params_parser.params)
+    print(result)

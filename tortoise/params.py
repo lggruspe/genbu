@@ -68,6 +68,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
 class ParamsParser:
     """Argv parser."""
     def __init__(self, params: list[Param]):
+        self.params = params
         self.rename = Renamer(params)
         self.options = {}
         self.arguments = {}

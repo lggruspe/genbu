@@ -6,7 +6,7 @@ import typing as t
 
 from . import combinators as comb
 from .params import Param, ParamsParser
-from .subcommands import Router
+from .subcommands import Router, Subcommand
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -24,14 +24,17 @@ def wrapped_list(head: str, *items: str) -> str:
     return textwrap.indent("\n".join(lines), "    ")
 
 
-def command_block(name: str, commands: dict[str, str]) -> str:
+def command_block(name: str, commands: t.Sequence[Subcommand]) -> str:
     """Construct commands info string."""
-    result = f"{name}:\n{wrapped_list(*commands.keys())}\n\n"
-    width = max(len(c) for c in commands)
+    names = [" ".join(c.name) for c in commands if c.name]
+    result = f"{name}:\n{wrapped_list(*names)}\n\n"
+    width = max(len(c) for c in names)
     width += width % 4
-    for command, description in commands.items():
-        result += f"    {command.ljust(width)}    {description}\n"
-    return result
+    for command in commands:
+        if command.name:
+            name = " ".join(command.name)
+            result += f"    {name.ljust(width)}    {command.description}\n"
+    return result.strip()
 
 
 def render_option(param: Param) -> t.Optional[str]:
@@ -126,6 +129,9 @@ def usage(program: str,
         if cli.takes_params():
             subcommand = cli.get_subcommand(())
             result += options_block(*subcommand.cli.params)
+        if cli.has_subcommands():
+            result += "\n\n"
+            result += command_block("commands", cli.routes)
 
     result += f"\n\n{textwrap.dedent(footer.strip())}"
     print(result)

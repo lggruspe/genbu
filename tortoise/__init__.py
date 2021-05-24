@@ -3,6 +3,7 @@
 from .params import Param, ParamsParser, UnknownOption
 from .forward import forward
 from .subcommands import InvalidRoute, Router, Subcommand
+from .usage import usage
 
 __all__ = [
     "InvalidRoute",
@@ -12,4 +13,5 @@ __all__ = [
     "Subcommand",
     "UnknownOption",
     "forward",
+    "usage",
 ]

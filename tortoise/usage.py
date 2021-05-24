@@ -6,6 +6,7 @@ import typing as t
 
 from . import combinators as comb
 from .params import Param, ParamsParser
+from .subcommands import Router
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -73,29 +74,58 @@ def options_block(*params: Param) -> str:
     return result.strip()
 
 
-def render_example(program: str, params_parser: ParamsParser) -> str:
-    """Render usage example."""
+def usage_example(params_parser: ParamsParser) -> str:
+    """Return usage example."""
     args = []
     for param in params_parser.params:
         if not param.is_option():
             args.append(f"<{param.name}:{param.parse!s}>")
 
-    result = f"usage: {program} "
-    if params_parser.options:
-        result += "[options]"
-    if args:
-        result += " "
-        result += " ".join(args)
-    return result
+    prefix = "[options] " if params_parser.options else ""
+    return prefix + " ".join(args)
+
+
+def render_example_router(program: str, cli: Router) -> str:
+    """Render usage example of CLI Router."""
+    examples = []
+    if cli.takes_params():
+        subcommand = cli.get_subcommand(())
+        examples.append(usage_example(subcommand.cli))
+    if cli.has_subcommands():
+        examples.append("<command> ...")
+
+    result = "usage:  "
+    for i, example in enumerate(examples):
+        if i == 0:
+            result += f"{program} {example}\n"
+        else:
+            result += f"        {program} {example}\n"
+    return result.strip()
+
+
+def render_example(program: str, cli: t.Union[ParamsParser, Router]) -> str:
+    """Render usage example."""
+    if isinstance(cli, ParamsParser):
+        return f"usage: {program} {usage_example(cli)}"
+    return render_example_router(program, cli)
 
 
 def usage(program: str,
           header: str,
           footer: str,
-          params_parser: ParamsParser) -> None:
+          cli: t.Union[ParamsParser, Router],
+          ) -> None:
     """Construct and print usage string."""
-    result = render_example(program, params_parser)
+    result = render_example(program, cli)
     result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
-    result += options_block(*params_parser.params)
+
+    if isinstance(cli, ParamsParser):
+        result += options_block(*cli.params)
+    else:
+        assert isinstance(cli, Router)
+        if cli.takes_params():
+            subcommand = cli.get_subcommand(())
+            result += options_block(*subcommand.cli.params)
+
     result += f"\n\n{textwrap.dedent(footer.strip())}"
     print(result)

@@ -18,4 +18,5 @@ if __name__ == "__main__":
         optargs = cli(sys.argv[1:])
         print(forward(optargs, cat))
     except Exception:
-        usage(cat.__name__, cat.__doc__, cli)
+        footer = f"Try '{cat.__name__} -h' for more information."
+        usage(cat.__name__, cat.__doc__, footer, cli)

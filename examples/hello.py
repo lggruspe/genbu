@@ -20,4 +20,5 @@ if __name__ == "__main__":
         optargs = cli(sys.argv[1:])
         print(forward(optargs, hello))
     except Exception:
-        usage(hello.__name__, hello.__doc__, cli)
+        footer = f"Try '{hello.__name__} -h' for more information."
+        usage(hello.__name__, hello.__doc__, footer, cli)

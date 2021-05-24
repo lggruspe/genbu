@@ -89,9 +89,13 @@ def render_example(program: str, params_parser: ParamsParser) -> str:
     return result
 
 
-def usage(program: str, description: str, params_parser: ParamsParser) -> None:
+def usage(program: str,
+          header: str,
+          footer: str,
+          params_parser: ParamsParser) -> None:
     """Construct and print usage string."""
     result = render_example(program, params_parser)
-    result += f"\n\n{textwrap.dedent(description.strip())}\n\n"
+    result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
     result += options_block(*params_parser.params)
+    result += f"\n\n{textwrap.dedent(footer.strip())}"
     print(result)

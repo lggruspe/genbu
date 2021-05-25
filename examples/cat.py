@@ -10,16 +10,23 @@ def cat(path: Path) -> str:
     return path.read_text()
 
 
-cli = ParamsParser([
-    Param("path", ["-p", "--path"], comb.One(Path), lambda _, b: b),
-])
+def exception_handler(exc: CliException):
+    footer = f"Try '{cat.__name__} -h' for more information."
+    usage(cat.__name__, cat.__doc__, footer, cli)
+    sys.exit(1)
+
+
+cli = ParamsParser(
+    [
+        Param("path", ["-p", "--path"], comb.One(Path), lambda _, b: b),
+    ],
+    function=cat,
+    exception_handler=exception_handler,
+)
 
 if __name__ == "__main__":
+    optargs = cli(sys.argv[1:])
     try:
-        optargs = cli(sys.argv[1:])
         print(forward(optargs, cat))
-    except CliException:
-        footer = f"Try '{cat.__name__} -h' for more information."
-        usage(cat.__name__, cat.__doc__, footer, cli)
     except Exception as exc:
         print("Something went wrong:", exc)

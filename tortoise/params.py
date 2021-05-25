@@ -68,7 +68,12 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
         return all(p.startswith("-") for p in self.optargs)
 
 
-ExceptionHandler = t.Callable[[CliException], t.Any]
+ExceptionHandler = t.Callable[[CliException], t.NoReturn]
+
+
+def _exception_handler(exc: CliException) -> t.NoReturn:
+    """Default exception handler."""
+    raise exc
 
 
 class ParamsParser:
@@ -76,7 +81,7 @@ class ParamsParser:
     def __init__(self,
                  params: list[Param],
                  function: t.Optional[t.Callable[..., t.Any]] = None,
-                 exception_handler: t.Optional[ExceptionHandler] = None):
+                 exception_handler: ExceptionHandler = _exception_handler):
         self.params = params
         self.function = function
         self.exception_handler = exception_handler
@@ -136,6 +141,16 @@ class ParamsParser:
 
         Note: parsers may throw CantParse.
         Long option expansion may raise UnknownOption.
+        """
+        try:
+            return self._call(argv)
+        except CliException as exc:
+            self.exception_handler(exc)
+
+    def _call(self, argv: t.Sequence[str]) -> dict[str, t.Any]:
+        """__call__ implementation.
+
+        Does not handle exceptions.
         """
         args, opts = partition(argv)
         optargs = []

@@ -1,7 +1,8 @@
 from pathlib import Path
 import sys
-from tortoise import Param, ParamsParser, forward, combinators as comb
-from tortoise.usage import usage
+from tortoise import (
+    CliException, Param, ParamsParser, forward, combinators as comb, usage
+)
 
 
 def cat(path: Path) -> str:
@@ -17,6 +18,8 @@ if __name__ == "__main__":
     try:
         optargs = cli(sys.argv[1:])
         print(forward(optargs, cat))
-    except Exception:
+    except CliException:
         footer = f"Try '{cat.__name__} -h' for more information."
         usage(cat.__name__, cat.__doc__, footer, cli)
+    except Exception as exc:
+        print("Something went wrong:", exc)

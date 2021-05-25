@@ -5,9 +5,10 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
+from .commons import CliException
 
 
-class UnknownOption(ValueError):
+class UnknownOption(CliException):
     """Unrecognized option."""
 
 

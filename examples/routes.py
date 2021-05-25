@@ -1,8 +1,14 @@
 import sys
 from tortoise import (
-    Param, ParamsParser, Router, Subcommand, forward, combinators as comb
+    CliException,
+    Param,
+    ParamsParser,
+    Router,
+    Subcommand,
+    forward,
+    combinators as comb,
+    usage,
 )
-from tortoise.usage import usage
 
 from examples import cat, hello
 
@@ -18,7 +24,7 @@ router = Router([
 
 
 def throw():
-    raise Exception
+    raise CliException
 
 
 try:
@@ -29,6 +35,8 @@ try:
         throw
     )
     print(forward(optargs, function))
-except Exception:
+except CliException:
     footer = "Try 'router <command> -h' for more information."
     usage("router", "Tortoise CLI example with subcommands.", footer, router)
+except Exception as exc:
+    print("something went wrong:", exc)

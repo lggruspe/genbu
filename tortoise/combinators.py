@@ -5,6 +5,8 @@ import collections
 import dataclasses
 import typing as t
 
+from .commons import CliException
+
 
 @dataclasses.dataclass
 class Result:
@@ -40,7 +42,7 @@ class Parser(abc.ABC):
         """Parser 'type' as string."""
 
 
-class CantParse(ValueError):
+class CantParse(CliException):
     """Can't parse type from tokens."""
 
 

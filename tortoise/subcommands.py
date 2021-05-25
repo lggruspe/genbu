@@ -3,6 +3,7 @@
 import textwrap
 import typing as t
 
+from .commons import CliException
 from .params import ParamsParser as Cli
 
 
@@ -17,7 +18,7 @@ class Subcommand:  # pylint: disable=too-few-public-methods
         self.description = textwrap.dedent(description.strip())
 
 
-class InvalidRoute(Exception):
+class InvalidRoute(CliException):
     """Invalid CLI route."""
 
 

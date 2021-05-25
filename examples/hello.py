@@ -1,6 +1,7 @@
 import sys
-from tortoise import Param, ParamsParser, forward, combinators as comb
-from tortoise.usage import usage
+from tortoise import (
+    CliException, Param, ParamsParser, forward, combinators as comb, usage
+)
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -19,6 +20,6 @@ if __name__ == "__main__":
     try:
         optargs = cli(sys.argv[1:])
         print(forward(optargs, hello))
-    except Exception:
+    except CliException:
         footer = f"Try '{hello.__name__} -h' for more information."
         usage(hello.__name__, hello.__doc__, footer, cli)

@@ -3,8 +3,10 @@
 import inspect
 import typing as t
 
+from .commons import CliException
 
-class MissingArgument(TypeError):
+
+class MissingArgument(CliException):
     """Missing argument to function."""
 
 

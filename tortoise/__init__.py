@@ -1,6 +1,6 @@
 """Tortoise CLI."""
 
-from .commons import CliException
+from .exceptions import CliException
 from .params import Param, ParamsParser, UnknownOption
 from .forward import forward
 from .subcommands import InvalidRoute, Router, Subcommand

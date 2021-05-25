@@ -5,7 +5,7 @@ import collections
 import dataclasses
 import typing as t
 
-from .commons import CliException
+from .exceptions import CliException
 
 
 @dataclasses.dataclass

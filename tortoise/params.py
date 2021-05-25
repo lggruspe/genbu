@@ -1,11 +1,13 @@
 """Params parser."""
 
 import collections
+import inspect
 import textwrap
 import typing as t
 
 from . import combinators as comb
-from .commons import CliException
+from .exceptions import CliException
+from .forward import MissingArgument, to_args_kwargs
 
 
 class UnknownOption(CliException):
@@ -66,10 +68,19 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
         return all(p.startswith("-") for p in self.optargs)
 
 
+ExceptionHandler = t.Callable[[CliException], t.Any]
+
+
 class ParamsParser:
     """Argv parser."""
-    def __init__(self, params: list[Param]):
+    def __init__(self,
+                 params: list[Param],
+                 function: t.Optional[t.Callable[..., t.Any]] = None,
+                 exception_handler: t.Optional[ExceptionHandler] = None):
         self.params = params
+        self.function = function
+        self.exception_handler = exception_handler
+
         self.rename = Renamer(params)
         self.options = {}
         self.arguments = {}
@@ -146,7 +157,11 @@ class ParamsParser:
 
         if deque:
             raise UnknownOption(deque[0])
-        return self.rename(optargs)
+
+        renamed = self.rename(optargs)
+        if not self.function:
+            return renamed
+        return check_arguments(renamed, self.function)
 
 
 def rename(optargs: list[tuple[str, t.Any]],
@@ -183,3 +198,20 @@ class Renamer:  # pylint: disable=too-few-public-methods
                 param.resolve
             )
         return dict(optargs)
+
+
+def check_arguments(optargs: dict[str, t.Any],
+                    function: t.Callable[..., t.Any],
+                    ) -> dict[str, t.Any]:
+    """Check if optargs contains all args that function needs.
+
+    Return optargs if okay.
+    Raise MissingArguments if not.
+    """
+    args, kwargs = to_args_kwargs(optargs, function)
+    sig = inspect.signature(function)
+    try:
+        sig.bind(*args, **kwargs)
+        return optargs
+    except TypeError as exc:
+        raise MissingArgument from exc

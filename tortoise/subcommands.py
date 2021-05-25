@@ -3,7 +3,7 @@
 import textwrap
 import typing as t
 
-from .commons import CliException
+from .exceptions import CliException
 from .params import ParamsParser as Cli
 
 

@@ -1,4 +1,4 @@
-"""Common imports."""
+"""CLI exception handlers."""
 
 
 class CliException(Exception):

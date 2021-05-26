@@ -101,29 +101,25 @@ class ShellParser:  # pylint: disable=R0902,R0913
         Note: parsers may throw CantParse.
         Long option expansion may raise UnknownOption.
         """
-        try:
-            return self._call(argv)
-        except CliException as exc:
-            self.exception_handler(exc)
-
-    def _call(self, argv: t.Sequence[str]) -> Namespace:
-        """__call__ implementation."""
         route: list["ShellParser"] = []
         deque = collections.deque(argv)
-
-        while deque:
-            prev = len(route)
-            for name, sub in self.subparsers.items():
-                if name == deque[0]:
-                    route.append(sub)
-                    deque.popleft()
+        try:
+            while deque:
+                prev = len(route)
+                for name, sub in self.subparsers.items():
+                    if name == deque[0]:
+                        route.append(sub)
+                        deque.popleft()
+                        break
+                if prev == len(route):
                     break
-            if prev == len(route):
-                break
 
-        subparser = route[-1] if route else self
-        optargs = self.parse_optargs(subparser, deque)
-        return Namespace(optargs, tuple(s.name for s in route) or None)
+            subparser = route[-1] if route else self
+            optargs = self.parse_optargs(subparser, deque)
+            return Namespace(optargs, tuple(s.name for s in route) or None)
+        except CliException as exc:
+            subparser = route[-1] if route else self
+            subparser.exception_handler(exc)
 
     @staticmethod
     def parse_optargs(subparser: "ShellParser",

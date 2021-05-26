@@ -76,109 +76,6 @@ def _exception_handler(exc: CliException) -> t.NoReturn:
     raise exc
 
 
-class ParamsParser:
-    """Argv parser."""
-    def __init__(self,
-                 params: list[Param],
-                 function: t.Optional[t.Callable[..., t.Any]] = None,
-                 exception_handler: ExceptionHandler = _exception_handler):
-        self.params = params
-        self.function = function
-        self.exception_handler = exception_handler
-
-        self.rename = Renamer(params)
-        self.options = {}
-        self.arguments = {}
-
-        for param in params:
-            for optarg in param.optargs:
-                if optarg.startswith("-"):
-                    self.options[optarg] = param
-                else:
-                    self.arguments[optarg] = param
-
-    def expand(self, prefix: str) -> str:
-        """Expand prefix to long option.
-
-        Return prefix if it's a short option and it exists.
-        Otherwise, raise UnknownOption.
-        Also raise error if the prefix is ambiguous.
-        """
-        if not prefix.startswith("--"):
-            if prefix in self.options:
-                return prefix
-            raise UnknownOption(prefix)
-
-        candidates = [o for o in self.options if o.startswith(prefix)]
-        if len(candidates) != 1:
-            raise UnknownOption(prefix)
-        return candidates[0]
-
-    def parse_opt(self,
-                  prefix: str,
-                  args: t.Sequence[str],
-                  ) -> tuple[str, t.Any, list[str]]:
-        """Parse option.
-
-        Return expanded option name, parsed value and unparsed tokens."""
-        assert prefix.startswith("-")
-        name = self.expand(prefix)
-        param = self.options.get(name)
-        if param is None:
-            raise UnknownOption(name)
-        parse = param.parse
-
-        deque = collections.deque(args)
-        value = parse(deque).value
-        return (name, value, list(deque))
-
-    def __call__(self, argv: t.Sequence[str]) -> dict[str, t.Any]:
-        """Parse options and arguments from argv.
-
-        Parse argv in two passes.
-        1. Parse options.
-        2. Parse arguments.
-
-        Note: parsers may throw CantParse.
-        Long option expansion may raise UnknownOption.
-        """
-        try:
-            return self._call(argv)
-        except CliException as exc:
-            self.exception_handler(exc)
-
-    def _call(self, argv: t.Sequence[str]) -> dict[str, t.Any]:
-        """__call__ implementation.
-
-        Does not handle exceptions.
-        """
-        args, opts = partition(argv)
-        optargs = []
-
-        for opt in opts:
-            if opt[0].startswith("-") and not opt[0].startswith("--"):
-                for short in opt[0][1:]:
-                    name, value, unused = self.parse_opt(f"-{short}", opt[1:])
-                    optargs.append((name, value))
-                    args.extend(unused)
-                continue
-            name, value, unused = self.parse_opt(opt[0], opt[1:])
-            optargs.append((name, value))
-            args.extend(unused)
-
-        deque = collections.deque(args)
-        for name, param in self.arguments.items():
-            optargs.append((name, param.parse(deque).value))
-
-        if deque:
-            raise UnknownOption(deque[0])
-
-        renamed = self.rename(optargs)
-        if not self.function:
-            return renamed
-        return check_arguments(renamed, self.function)
-
-
 def rename(optargs: list[tuple[str, t.Any]],
            name: str,
            names: set[str],
@@ -200,7 +97,7 @@ def rename(optargs: list[tuple[str, t.Any]],
 
 class Renamer:  # pylint: disable=too-few-public-methods
     """Options and arguments renamer."""
-    def __init__(self, params: list[Param]):
+    def __init__(self, params: t.Sequence[Param]):
         self.params = params
 
     def __call__(self, optargs: list[tuple[str, t.Any]]) -> dict[str, t.Any]:

@@ -1,26 +1,17 @@
 import sys
 from tortoise import (
-    CliException,
-    Param,
-    ParamsParser,
-    Router,
-    Subcommand,
-    forward,
-    combinators as comb,
-    usage,
+    CliException, Param, ShellParser, forward, combinators as comb, usage,
 )
-
 from examples import cat, hello
 
-cli = ParamsParser([
-    Param("help", ["-h", "--help"], comb.Emit(True), lambda _, b: b)
-])
-
-router = Router([
-    Subcommand(cli, "", "router example"),
-    Subcommand(hello.cli, "hello", "say hello"),
-    Subcommand(cat.cli, "cat", "concatenate files to stdout"),
-])
+cli = ShellParser(
+    name=__name__,
+    description="router example",
+    params=[
+        Param("help", ["-h", "--help"], comb.Emit(True), lambda _, b: b)
+    ],
+    subparsers=[cat.cli, hello.cli],
+)
 
 
 def throw():
@@ -28,15 +19,15 @@ def throw():
 
 
 try:
-    command, optargs = router(sys.argv[1:])
+    command, optargs = cli(sys.argv[1:])
     function = (
-        cat.cat if command.name == ("cat",) else
-        hello.hello if command.name == ("hello",) else
+        cat.cat if command == ("cat",) else
+        hello.hello if command == ("hello",) else
         throw
     )
     print(forward(optargs, function))
 except CliException:
-    footer = "Try 'router <command> -h' for more information."
-    usage("router", "Tortoise CLI example with subcommands.", footer, router)
+    footer = "Try 'cli <command> -h' for more information."
+    usage("cli", "Tortoise CLI example with subcommands.", footer, cli)
 except Exception as exc:
     print("something went wrong:", exc)

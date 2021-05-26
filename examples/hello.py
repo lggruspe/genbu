@@ -1,6 +1,6 @@
 import sys
 from tortoise import (
-    CliException, Param, ParamsParser, forward, combinators as comb, usage
+    CliException, Param, ShellParser, forward, combinators as comb, usage
 )
 
 
@@ -17,15 +17,17 @@ def exception_handler(exc: CliException):
     sys.exit(1)
 
 
-cli = ParamsParser(
-    [
+cli = ShellParser(
+    name=hello.__name__,
+    description=hello.__doc__,
+    params=[
         Param("greeting", ["-g", "--greeting"], comb.One(str), lambda _, b: b),
         Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
     ],
-    function=hello,
     exception_handler=exception_handler,
+    function=hello,
 )
 
 if __name__ == "__main__":
-    optargs = cli(sys.argv[1:])
+    _, optargs = cli(sys.argv[1:])
     print(forward(optargs, hello))

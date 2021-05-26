@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 from tortoise import (
-    CliException, Param, ParamsParser, forward, combinators as comb, usage
+    CliException, Param, ShellParser, forward, combinators as comb, usage
 )
 
 
@@ -16,16 +16,18 @@ def exception_handler(exc: CliException):
     sys.exit(1)
 
 
-cli = ParamsParser(
-    [
+cli = ShellParser(
+    name=cat.__name__,
+    description=cat.__doc__,
+    params=[
         Param("path", ["-p", "--path"], comb.One(Path), lambda _, b: b),
     ],
-    function=cat,
     exception_handler=exception_handler,
+    function=cat,
 )
 
 if __name__ == "__main__":
-    optargs = cli(sys.argv[1:])
+    _, optargs = cli(sys.argv[1:])
     try:
         print(forward(optargs, cat))
     except Exception as exc:

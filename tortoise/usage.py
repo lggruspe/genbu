@@ -5,8 +5,8 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
-from .params import Param, ParamsParser
-from .subcommands import Router, Subcommand
+from .params import Param
+from .shell_parser import ShellParser
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -24,16 +24,15 @@ def wrapped_list(head: str, *items: str) -> str:
     return textwrap.indent("\n".join(lines), "    ")
 
 
-def command_block(name: str, commands: t.Sequence[Subcommand]) -> str:
-    """Construct commands info string."""
-    names = [" ".join(c.name) for c in commands if c.name]
-    result = f"{name}:\n{wrapped_list(*names)}\n\n"
+def command_block(group_name: str, parser: ShellParser) -> str:
+    """Construct command block for shell parser subcommands."""
+    names = parser.subparsers.keys()
+    result = f"{group_name}:\n{wrapped_list(*names)}\n\n"
     width = max(len(c) for c in names)
     width += width % 4
-    for command in commands:
-        if command.name:
-            name = " ".join(command.name)
-            result += f"    {name.ljust(width)}    {command.description}\n"
+    for sub in parser.subparsers.values():
+        if sub.name:
+            result += f"    {sub.name.ljust(width)}    {sub.description}\n"
     return result.strip()
 
 
@@ -77,24 +76,21 @@ def options_block(*params: Param) -> str:
     return result.strip()
 
 
-def usage_example(params_parser: ParamsParser) -> str:
-    """Return usage example."""
-    args = []
-    for param in params_parser.params:
-        if not param.is_option():
-            args.append(f"<{param.name}:{param.parse!s}>")
-
-    prefix = "[options] " if params_parser.options else ""
+def usage_example(parser: ShellParser) -> str:
+    """Return usage example for ShellParser."""
+    args = [
+        f"<{p.name}:{p.parse!s}>" for p in parser.params if not p.is_option()
+    ]
+    prefix = "[options] " if parser.options else ""
     return prefix + " ".join(args)
 
 
-def render_example_router(program: str, cli: Router) -> str:
-    """Render usage example of CLI Router."""
+def render_example(program: str, parser: ShellParser) -> str:
+    """Render usage examples of CLI with subcommands."""
     examples = []
-    if cli.takes_params():
-        subcommand = cli.get_subcommand(())
-        examples.append(usage_example(subcommand.cli))
-    if cli.has_subcommands():
+    if parser.takes_params():
+        examples.append(usage_example(parser))
+    if parser.has_subcommands():
         examples.append("<command> ...")
 
     result = "usage:  "
@@ -106,32 +102,20 @@ def render_example_router(program: str, cli: Router) -> str:
     return result.strip()
 
 
-def render_example(program: str, cli: t.Union[ParamsParser, Router]) -> str:
-    """Render usage example."""
-    if isinstance(cli, ParamsParser):
-        return f"usage: {program} {usage_example(cli)}"
-    return render_example_router(program, cli)
-
-
 def usage(program: str,
           header: str,
           footer: str,
-          cli: t.Union[ParamsParser, Router],
+          parser: ShellParser,
           ) -> None:
     """Construct and print usage string."""
-    result = render_example(program, cli)
+    result = render_example(program, parser)
     result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
 
-    if isinstance(cli, ParamsParser):
-        result += options_block(*cli.params)
-    else:
-        assert isinstance(cli, Router)
-        if cli.takes_params():
-            subcommand = cli.get_subcommand(())
-            result += options_block(*subcommand.cli.params)
-        if cli.has_subcommands():
-            result += "\n\n"
-            result += command_block("commands", cli.routes)
+    if parser.takes_params():
+        result += options_block(*parser.params)
+    if parser.has_subcommands():
+        result += "\n\n"
+        result += command_block("commands", parser)
 
     result += f"\n\n{textwrap.dedent(footer.strip())}"
     print(result)

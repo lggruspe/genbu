@@ -1,6 +1,6 @@
 import sys
 from tortoise import (
-    CliException, Param, ShellParser, forward, combinators as comb, usage
+    CliException, Param, ShellParser, combinators as comb, usage
 )
 
 
@@ -29,5 +29,5 @@ cli = ShellParser(
 )
 
 if __name__ == "__main__":
-    _, optargs = cli(sys.argv[1:])
-    print(forward(optargs, hello))
+    names = cli(sys.argv[1:])
+    print(names.bind(hello))

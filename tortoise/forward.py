@@ -37,11 +37,3 @@ def to_args_kwargs(optargs: dict[str, t.Any],
             assert param.kind == param.VAR_KEYWORD
             kwargs.update(value)
     return args, kwargs
-
-
-def forward(optargs: dict[str, t.Any],
-            function: t.Callable[..., t.Any],
-            ) -> t.Any:
-    """Forward options and arguments to function."""
-    args, kwargs = to_args_kwargs(optargs, function)
-    return function(*args, **kwargs)

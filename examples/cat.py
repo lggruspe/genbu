@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 from tortoise import (
-    CliException, Param, ShellParser, forward, combinators as comb, usage
+    CliException, Param, ShellParser, combinators as comb, usage
 )
 
 
@@ -27,8 +27,8 @@ cli = ShellParser(
 )
 
 if __name__ == "__main__":
-    _, optargs = cli(sys.argv[1:])
+    names = cli(sys.argv[1:])
     try:
-        print(forward(optargs, cat))
+        print(names.bind(cat))
     except Exception as exc:
         print("Something went wrong:", exc)

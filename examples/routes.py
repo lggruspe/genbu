@@ -1,6 +1,6 @@
 import sys
 from tortoise import (
-    CliException, Param, ShellParser, forward, combinators as comb, usage,
+    CliException, Param, ShellParser, combinators as comb, usage,
 )
 from examples import cat, hello
 
@@ -19,13 +19,11 @@ def throw():
 
 
 try:
-    command, optargs = cli(sys.argv[1:])
-    function = (
-        cat.cat if command == ("cat",) else
-        hello.hello if command == ("hello",) else
-        throw
-    )
-    print(forward(optargs, function))
+    names = cli(sys.argv[1:])
+    print(names.bind(throw, {
+        ("cat",): cat.cat,
+        ("hello",): hello.hello,
+    }))
 except CliException:
     footer = "Try 'cli <command> -h' for more information."
     usage("cli", "Tortoise CLI example with subcommands.", footer, cli)

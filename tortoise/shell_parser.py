@@ -4,8 +4,9 @@ import collections
 import textwrap
 import typing as t
 
-from .params import Param, Renamer, UnknownOption, check_arguments, partition
 from .exceptions import CliException
+from .namespace import Namespace
+from .params import Param, Renamer, UnknownOption, check_arguments, partition
 
 
 ExceptionHandler = t.Callable[[CliException], t.NoReturn]
@@ -89,9 +90,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         """Check if ShellParser has named subcommands."""
         return bool(self.subparsers)
 
-    def __call__(self,
-                 argv: t.Sequence[str],
-                 ) -> tuple[tuple[str, ...], dict[str, t.Any]]:
+    def __call__(self, argv: t.Sequence[str]) -> Namespace:
         """Parse commands, options and arguments from argv.
 
         Parse argv in three passes.
@@ -107,9 +106,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         except CliException as exc:
             self.exception_handler(exc)
 
-    def _call(self,
-              argv: t.Sequence[str],
-              ) -> tuple[tuple[str, ...], dict[str, t.Any]]:
+    def _call(self, argv: t.Sequence[str]) -> Namespace:
         """__call__ implementation."""
         route: list["ShellParser"] = []
         deque = collections.deque(argv)
@@ -126,7 +123,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
 
         subparser = route[-1] if route else self
         optargs = self.parse_optargs(subparser, deque)
-        return tuple(s.name for s in route), optargs
+        return Namespace(optargs, tuple(s.name for s in route) or None)
 
     @staticmethod
     def parse_optargs(subparser: "ShellParser",

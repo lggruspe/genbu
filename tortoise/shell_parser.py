@@ -9,10 +9,10 @@ from .namespace import Namespace
 from .params import Param, Renamer, UnknownOption, check_arguments, partition
 
 
-ExceptionHandler = t.Callable[[CliException], t.NoReturn]
+ExceptionHandler = t.Callable[["ShellParser", CliException], t.NoReturn]
 
 
-def _exception_handler(exc: CliException) -> t.NoReturn:
+def _exception_handler(_: "ShellParser", exc: CliException) -> t.NoReturn:
     """Default exception handler."""
     raise exc
 
@@ -35,6 +35,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         self.subparsers = {s.name: s for s in subparsers or []}
         self.exception_handler = exception_handler
         self.function = function
+        self.parent = None
 
         self.rename = Renamer(params or ())
         self.options = {}
@@ -46,6 +47,15 @@ class ShellParser:  # pylint: disable=R0902,R0913
                     self.options[optarg] = param
                 else:
                     self.arguments[optarg] = param
+
+        for sub in self.subparsers.values():
+            sub.parent = self
+
+    def complete_name(self) -> tuple[str, ...]:
+        """Return complete command name (includes parents)."""
+        if self.parent is None:
+            return (self.name,)
+        return self.parent.complete_name() + (self.name,)
 
     def expand(self, prefix: str) -> str:
         """Expand prefix to long option.
@@ -119,7 +129,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
             return Namespace(optargs, tuple(s.name for s in route) or None)
         except CliException as exc:
             subparser = route[-1] if route else self
-            subparser.exception_handler(exc)
+            subparser.exception_handler(subparser, exc)
 
     @staticmethod
     def parse_optargs(subparser: "ShellParser",

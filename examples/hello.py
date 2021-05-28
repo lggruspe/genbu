@@ -11,9 +11,10 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-def exception_handler(exc: CliException):
-    footer = f"Try '{hello.__name__} -h' for more information."
-    usage(hello.__name__, hello.__doc__, footer, cli)
+def exception_handler(cli: ShellParser, exc: CliException):
+    name = " ".join(cli.complete_name()) or hello.__name__
+    footer = f"Try '{name} -h' for more information."
+    usage(name, hello.__doc__, footer, cli)
     sys.exit(1)
 
 

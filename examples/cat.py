@@ -10,9 +10,10 @@ def cat(path: Path) -> str:
     return path.read_text()
 
 
-def exception_handler(exc: CliException):
-    footer = f"Try '{cat.__name__} -h' for more information."
-    usage(cat.__name__, cat.__doc__, footer, cli)
+def exception_handler(cli: ShellParser, exc: CliException):
+    name = " ".join(cli.complete_name()) or cat.__name__
+    footer = f"Try '{name} -h' for more information."
+    usage(name, cat.__doc__, footer, cli)
     sys.exit(1)
 
 

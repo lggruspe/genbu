@@ -68,14 +68,6 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
         return all(p.startswith("-") for p in self.optargs)
 
 
-ExceptionHandler = t.Callable[[CliException], t.NoReturn]
-
-
-def _exception_handler(exc: CliException) -> t.NoReturn:
-    """Default exception handler."""
-    raise exc
-
-
 def rename(optargs: list[tuple[str, t.Any]],
            name: str,
            names: set[str],

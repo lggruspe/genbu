@@ -85,7 +85,7 @@ def usage_example(parser: ShellParser) -> str:
     return prefix + " ".join(args)
 
 
-def render_example(program: str, parser: ShellParser) -> str:
+def render_example(parser: ShellParser) -> str:
     """Render usage examples of CLI with subcommands."""
     examples = []
     if parser.takes_params():
@@ -93,29 +93,29 @@ def render_example(program: str, parser: ShellParser) -> str:
     if parser.has_subcommands():
         examples.append("<command> ...")
 
+    name = " ".join(parser.complete_name())
     result = "usage:  "
     for i, example in enumerate(examples):
         if i == 0:
-            result += f"{program} {example}\n"
+            result += f"{name} {example}\n"
         else:
-            result += f"        {program} {example}\n"
+            result += f"        {name} {example}\n"
     return result.strip()
 
 
-def usage(program: str,
-          header: str,
-          footer: str,
-          parser: ShellParser,
-          ) -> None:
-    """Construct and print usage string."""
-    result = render_example(program, parser)
-    result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
-
+def usage(parser: ShellParser,
+          header: t.Optional[str] = None,
+          footer: t.Optional[str] = None,
+          ) -> str:
+    """Construct usage string."""
+    result = render_example(parser)
+    if header is not None:
+        result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
     if parser.takes_params():
         result += options_block(*parser.params)
     if parser.has_subcommands():
         result += "\n\n"
         result += command_block("commands", parser)
-
-    result += f"\n\n{textwrap.dedent(footer.strip())}"
-    print(result)
+    if footer is not None:
+        result += f"\n\n{textwrap.dedent(footer.strip())}"
+    return result

@@ -14,8 +14,7 @@ def hello(*names: str, greeting: str = "Hello") -> str:
 def exception_handler(cli: ShellParser, exc: CliException):
     name = " ".join(cli.complete_name()) or hello.__name__
     footer = f"Try '{name} -h' for more information."
-    usage(name, hello.__doc__, footer, cli)
-    sys.exit(1)
+    sys.exit(usage(cli, header=hello.__doc__, footer=footer))
 
 
 cli = ShellParser(

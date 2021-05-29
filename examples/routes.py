@@ -8,8 +8,11 @@ from examples import cat, hello
 def show_usage(cli: ShellParser, error: bool = False):
     name = " ".join(cli.complete_name()) or "cli"
     footer = f"Try '{name} -h' for more information."
-    usage(name, "Tortoise CLI example with subcommands.", footer, cli)
-    sys.exit(1 if error else 0)
+    _usage = usage(cli, "Tortoise CLI example with subcommands.", footer)
+    if error:
+        sys.exit(_usage)
+    print(_usage)
+    sys.exit(0)
 
 
 def exception_handler(cli: ShellParser, exc: CliException):

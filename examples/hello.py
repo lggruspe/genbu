@@ -1,7 +1,5 @@
 import sys
-from tortoise import (
-    CliException, Param, ShellParser, combinators as comb, usage
-)
+from genbu import CliException, Param, ShellParser, combinators as comb, usage
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:

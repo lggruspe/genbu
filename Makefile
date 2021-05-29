@@ -1,6 +1,6 @@
 lint:
-	mypy tortoise --strict
-	pylint tortoise
-	flake8 tortoise --max-complexity=7
+	mypy genbu --strict
+	pylint genbu
+	flake8 genbu --max-complexity=7
 
 .PHONY:	lint

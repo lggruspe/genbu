@@ -1,4 +1,4 @@
-"""Tortoise CLI."""
+"""Genbu CLI."""
 
 from .exceptions import CliException
 from .params import Param, UnknownOption

@@ -1,14 +1,12 @@
 import sys
-from tortoise import (
-    CliException, Param, ShellParser, combinators as comb, usage,
-)
+from genbu import CliException, Param, ShellParser, combinators as comb, usage
 from examples import cat, hello
 
 
 def show_usage(cli: ShellParser, error: bool = False):
     name = " ".join(cli.complete_name()) or "cli"
     footer = f"Try '{name} -h' for more information."
-    _usage = usage(cli, "Tortoise CLI example with subcommands.", footer)
+    _usage = usage(cli, "Genbu CLI example with subcommands.", footer)
     if error:
         sys.exit(_usage)
     print(_usage)

@@ -1,8 +1,6 @@
 from pathlib import Path
 import sys
-from tortoise import (
-    CliException, Param, ShellParser, combinators as comb, usage
-)
+from genbu import CliException, Param, ShellParser, combinators as comb, usage
 
 
 def cat(path: Path) -> str:

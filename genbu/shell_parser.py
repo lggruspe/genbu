@@ -6,7 +6,8 @@ import typing as t
 
 from .exceptions import CliException
 from .namespace import Namespace
-from .params import Param, Renamer, UnknownOption, check_arguments, partition
+from .normalize import normalize
+from .params import Param, Renamer, UnknownOption, check_arguments
 
 
 ExceptionHandler = t.Callable[["ShellParser", CliException], t.NoReturn]
@@ -139,17 +140,12 @@ class ShellParser:  # pylint: disable=R0902,R0913
 
         Assume program name and subcommands have been removed.
         """
-        args, opts = partition(argv)
+        normalized = normalize(subparser.params, argv)
+        args = normalized.arguments
+        opts = normalized.options
         optargs = []
 
         for opt in opts:
-            if opt[0].startswith("-") and not opt[0].startswith("--"):
-                for short in opt[0][1:]:
-                    name, value, unused = subparser.parse_opt(f"-{short}",
-                                                              opt[1:])
-                    optargs.append((name, value))
-                    args.extend(unused)
-                continue
             name, value, unused = subparser.parse_opt(opt[0], opt[1:])
             optargs.append((name, value))
             args.extend(unused)

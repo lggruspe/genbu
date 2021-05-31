@@ -1,6 +1,5 @@
 """Params parser."""
 
-import collections
 import inspect
 import textwrap
 import typing as t
@@ -12,31 +11,6 @@ from .forward import MissingArgument, to_args_kwargs
 
 class UnknownOption(CliException):
     """Unrecognized option."""
-
-
-def partition(argv: t.Sequence[str]) -> tuple[list[str], list[list[str]]]:
-    """Partition argv arguments and options.
-
-    Note: the options list may still contain some positional arguments.
-    Assume tokens that contain multiple short options don't take args.
-    """
-    args = []
-    opts = []
-
-    deque = collections.deque(argv)
-    while deque:
-        current = deque.popleft()
-        if not current.startswith("-"):
-            args.append(current)
-        elif not current.startswith("--") and len(current) > 2:
-            for opt in current[1:]:
-                opts.append([f"--{opt}"])
-        else:
-            tail = [current]
-            while deque and not deque[0].startswith("-"):
-                tail.append(deque.popleft())
-            opts.append(tail)
-    return args, opts
 
 
 Resolver = t.Callable[[t.Any, t.Any], t.Any]

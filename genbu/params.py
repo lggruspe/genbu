@@ -9,6 +9,10 @@ from .exceptions import CliException
 from .forward import MissingArgument, to_args_kwargs
 
 
+class InvalidOption(CliException):
+    """Invalid option (e.g. contains '=' or ' ')."""
+
+
 class UnknownOption(CliException):
     """Unrecognized option."""
 
@@ -29,6 +33,10 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
             optargs = [name]
         if description is not None:
             description = textwrap.dedent(description.strip())
+
+        for optarg in optargs:
+            if "=" in optarg or any(c.isspace() for c in optarg):
+                raise InvalidOption(optarg)
 
         self.name = name
         self.optargs = optargs

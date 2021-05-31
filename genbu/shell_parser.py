@@ -1,6 +1,7 @@
 """Shell parser."""
 
 import collections
+import sys
 import textwrap
 import typing as t
 
@@ -13,9 +14,12 @@ from .params import Param, Renamer, UnknownOption, check_arguments
 ExceptionHandler = t.Callable[["ShellParser", CliException], t.NoReturn]
 
 
-def _exception_handler(_: "ShellParser", exc: CliException) -> t.NoReturn:
+def default_exception_handler(cli: "ShellParser",
+                              exc: CliException,
+                              ) -> t.NoReturn:
     """Default exception handler."""
-    raise exc
+    name = " ".join(cli.complete_name())
+    sys.exit(f"{name}: {exc}")
 
 
 class ShellParser:  # pylint: disable=R0902,R0913
@@ -25,7 +29,10 @@ class ShellParser:  # pylint: disable=R0902,R0913
                  description: str,
                  params: t.Optional[list[Param]] = None,
                  subparsers: t.Optional[t.Sequence["ShellParser"]] = None,
-                 exception_handler: ExceptionHandler = _exception_handler,
+
+                 exception_handler: ExceptionHandler =
+                 default_exception_handler,
+
                  function: t.Optional[t.Callable[..., t.Any]] = None,
                  ):
         assert not any(c.isspace() for c in name)

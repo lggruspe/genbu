@@ -108,9 +108,11 @@ def usage(parser: ShellParser,
           footer: t.Optional[str] = None,
           ) -> str:
     """Construct usage string."""
+    if header is None:
+        header = parser.description
+
     result = render_example(parser)
-    if header is not None:
-        result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
+    result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
     if parser.takes_params():
         result += options_block(*parser.params)
     if parser.has_subcommands():

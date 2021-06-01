@@ -1,5 +1,5 @@
 import sys
-from genbu import CliException, Param, ShellParser, combinators as comb, usage
+from genbu import Param, ShellParser, combinators as comb, usage
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -9,10 +9,11 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-def exception_handler(cli: ShellParser, exc: CliException):
-    name = " ".join(cli.complete_name()) or hello.__name__
-    footer = f"Try '{name} -h' for more information."
-    sys.exit(usage(cli, header=hello.__doc__, footer=footer))
+def main(*names: str, greeting: str = "Hello", help_: bool = False) -> str:
+    """Entrypoint to hello."""
+    if help_:
+        sys.exit(usage(cli))
+    return hello(*names, greeting=greeting)
 
 
 cli = ShellParser(
@@ -21,11 +22,11 @@ cli = ShellParser(
     params=[
         Param("greeting", ["-g", "--greeting"], comb.One(str), lambda _, b: b),
         Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
+        Param("help_", ["-?", "-h", "--help"], comb.Emit(True)),
     ],
-    exception_handler=exception_handler,
-    function=hello,
+    function=main,
 )
 
 if __name__ == "__main__":
     names = cli(sys.argv[1:])
-    print(names.bind(hello))
+    print(names.bind(main))

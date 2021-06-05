@@ -14,9 +14,7 @@ from .params import Param, Renamer, UnknownOption, check_arguments
 ExceptionHandler = t.Callable[["ShellParser", CliException], t.NoReturn]
 
 
-def default_exception_handler(cli: "ShellParser",
-                              exc: CliException,
-                              ) -> t.NoReturn:
+def default_error_handler(cli: "ShellParser", exc: CliException) -> t.NoReturn:
     """Default exception handler."""
     name = " ".join(cli.complete_name())
     sys.exit(f"{name}: {exc}")
@@ -25,27 +23,23 @@ def default_exception_handler(cli: "ShellParser",
 class ShellParser:  # pylint: disable=R0902,R0913
     """Shell (argv) parser."""
     def __init__(self,
+                 *,
                  name: str,
                  description: str,
                  params: t.Optional[list[Param]] = None,
                  subparsers: t.Optional[t.Sequence["ShellParser"]] = None,
-
-                 exception_handler: ExceptionHandler =
-                 default_exception_handler,
-
-                 function: t.Optional[t.Callable[..., t.Any]] = None,
-                 ):
+                 callback: t.Callable[..., t.Any],
+                 error_handler: ExceptionHandler = default_error_handler):
         assert not any(c.isspace() for c in name)
 
         self.name = name
         self.description = textwrap.dedent(description.strip())
         self.params = list(params or ())
         self.subparsers = {s.name: s for s in subparsers or []}
-        self.exception_handler = exception_handler
-        self.function = function
+        self.callback = callback
+        self.error_handler = error_handler
         self.parent = None
 
-        self.rename = Renamer(params or ())
         self.options = {}
         self.arguments = {}
 
@@ -137,7 +131,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
             return Namespace(optargs, tuple(s.name for s in route) or None)
         except CliException as exc:
             subparser = route[-1] if route else self
-            subparser.exception_handler(subparser, exc)
+            subparser.error_handler(subparser, exc)
 
     @staticmethod
     def parse_optargs(subparser: "ShellParser",
@@ -164,7 +158,5 @@ class ShellParser:  # pylint: disable=R0902,R0913
         if deque:
             raise UnknownOption(deque[0])
 
-        renamed = subparser.rename(optargs)
-        if not subparser.function:
-            return renamed
-        return check_arguments(renamed, subparser.function)
+        renamed = Renamer(subparser.params or ())(optargs)
+        return check_arguments(renamed, subparser.callback)

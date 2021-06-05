@@ -24,7 +24,7 @@ cli = ShellParser(
         Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
         Param("help_", ["-?", "-h", "--help"], comb.Emit(True)),
     ],
-    function=main,
+    callback=main,
 )
 
 if __name__ == "__main__":

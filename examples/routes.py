@@ -13,7 +13,7 @@ def show_usage(cli: ShellParser, error: bool = False):
     sys.exit(0)
 
 
-def exception_handler(cli: ShellParser, exc: CliException):
+def error_handler(cli: ShellParser, exc: CliException):
     show_usage(cli, error=True)
 
 
@@ -24,7 +24,8 @@ cli = ShellParser(
         Param("help", ["-h", "--help"], comb.Emit(True), lambda _, b: b)
     ],
     subparsers=[cat.cli, hello.cli],
-    exception_handler=exception_handler,
+    callback=lambda: show_usage(cli),
+    error_handler=error_handler,
 )
 
 

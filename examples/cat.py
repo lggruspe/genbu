@@ -25,7 +25,7 @@ cli = ShellParser(
         Param("path", ["-p", "--path"], comb.One(Path), lambda _, b: b),
         Param("help_", ["-?", "-h", "--help"], comb.Emit(True)),
     ],
-    function=main,
+    callback=main,
 )
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import textwrap
 import typing as t
 
 from .exceptions import CliException
-from .namespace import Namespace
+from .forward import to_args_kwargs
 from .normalize import normalize
 from .params import Param, Renamer, UnknownOption, check_arguments
 
@@ -102,7 +102,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         """Check if ShellParser has named subcommands."""
         return bool(self.subparsers)
 
-    def __call__(self, argv: t.Sequence[str]) -> Namespace:
+    def parse(self, argv: t.Sequence[str]) -> "Namespace":
         """Parse commands, options and arguments from argv.
 
         Parse argv in three passes.
@@ -128,10 +128,15 @@ class ShellParser:  # pylint: disable=R0902,R0913
 
             subparser = route[-1] if route else self
             optargs = self.parse_optargs(subparser, deque)
-            return Namespace(optargs, tuple(s.name for s in route) or None)
+            return Namespace(optargs, route[0] if route else self)
         except CliException as exc:
             subparser = route[-1] if route else self
             subparser.error_handler(subparser, exc)
+
+    def __call__(self, argv: t.Sequence[str]) -> t.Any:
+        """Parse argv and run callback."""
+        namespace = self.parse(argv)
+        return namespace.bind(namespace.cli.callback)
 
     @staticmethod
     def parse_optargs(subparser: "ShellParser",
@@ -160,3 +165,19 @@ class ShellParser:  # pylint: disable=R0902,R0913
 
         renamed = Renamer(subparser.params or ())(optargs)
         return check_arguments(renamed, subparser.callback)
+
+
+class Namespace:  # pylint: disable=too-few-public-methods
+    """Namespace object that contains:
+
+    - mapping from names to values
+    - (optional) command prefix from argv
+    """
+    def __init__(self, names: dict[str, t.Any], cli: ShellParser):
+        self.names = names
+        self.cli = cli
+
+    def bind(self, function: t.Callable[..., t.Any]) -> t.Any:
+        """Pass names to function."""
+        args, kwargs = to_args_kwargs(self.names, function)
+        return function(*args, **kwargs)

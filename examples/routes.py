@@ -30,10 +30,6 @@ cli = ShellParser(
 
 
 try:
-    names = cli(sys.argv[1:])
-    print(names.bind(lambda: show_usage(cli), {
-        ("cat",): cat.main,
-        ("hello",): hello.main,
-    }))
+    print(cli(sys.argv[1:]))
 except Exception as exc:
     print("something went wrong:", exc)

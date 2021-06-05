@@ -29,9 +29,8 @@ cli = ShellParser(
 )
 
 if __name__ == "__main__":
-    names = cli(sys.argv[1:])
     try:
-        print(names.bind(main))
+        print(cli(sys.argv[1:]))
     except Exception as exc:
         name = " ".join(cli.complete_name())
         print(f"{name}: {exc}\nTry '{name} -h' for more information.")

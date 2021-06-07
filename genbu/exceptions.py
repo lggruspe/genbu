@@ -1,5 +1,5 @@
 """CLI exception handlers."""
 
 
-class CliException(Exception):
+class CLError(Exception):
     """Base CLI exception."""

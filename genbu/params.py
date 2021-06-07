@@ -5,15 +5,15 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
-from .exceptions import CliException
+from .exceptions import CLError
 from .forward import MissingArgument, to_args_kwargs
 
 
-class InvalidOption(CliException):
+class InvalidOption(CLError):
     """Invalid option (e.g. contains '=' or ' ')."""
 
 
-class UnknownOption(CliException):
+class UnknownOption(CLError):
     """Unrecognized option."""
 
 

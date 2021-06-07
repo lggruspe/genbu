@@ -3,10 +3,10 @@
 import inspect
 import typing as t
 
-from .exceptions import CliException
+from .exceptions import CLError
 
 
-class MissingArgument(CliException):
+class MissingArgument(CLError):
     """Missing argument to function."""
 
 

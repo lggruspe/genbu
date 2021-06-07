@@ -5,8 +5,8 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
+from .cli import CLInterface
 from .params import Param
-from .shell_parser import ShellParser
 
 
 def wrapped_list(head: str, *items: str) -> str:
@@ -24,7 +24,7 @@ def wrapped_list(head: str, *items: str) -> str:
     return textwrap.indent("\n".join(lines), "    ")
 
 
-def command_block(group_name: str, parser: ShellParser) -> str:
+def command_block(group_name: str, parser: CLInterface) -> str:
     """Construct command block for shell parser subcommands."""
     names = parser.subparsers.keys()
     result = f"{group_name}:\n{wrapped_list(*names)}\n\n"
@@ -76,8 +76,8 @@ def options_block(*params: Param) -> str:
     return result.strip()
 
 
-def usage_example(parser: ShellParser) -> str:
-    """Return usage example for ShellParser."""
+def usage_example(parser: CLInterface) -> str:
+    """Return usage example for CLInterface."""
     args = [
         f"<{p.name}:{p.parse!s}>" for p in parser.params if not p.is_option()
     ]
@@ -85,7 +85,7 @@ def usage_example(parser: ShellParser) -> str:
     return prefix + " ".join(args)
 
 
-def render_example(parser: ShellParser) -> str:
+def render_example(parser: CLInterface) -> str:
     """Render usage examples of CLI with subcommands."""
     examples = []
     if parser.takes_params():
@@ -103,7 +103,7 @@ def render_example(parser: ShellParser) -> str:
     return result.strip()
 
 
-def usage(parser: ShellParser,
+def usage(parser: CLInterface,
           header: t.Optional[str] = None,
           footer: t.Optional[str] = None,
           ) -> str:

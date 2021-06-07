@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import typing as t
 
-from genbu import Param, ShellParser, combinators as comb, usage
+from genbu import CLInterface, Param, combinators as comb, usage
 
 
 def cat(path: Path) -> str:
@@ -18,7 +18,7 @@ def main(help_: bool = False, path: t.Optional[Path] = None) -> str:
     return cat(path)
 
 
-cli = ShellParser(
+cli = CLInterface(
     name=cat.__name__,
     description=cat.__doc__,
     params=[

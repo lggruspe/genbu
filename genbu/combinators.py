@@ -5,7 +5,7 @@ import collections
 import dataclasses
 import typing as t
 
-from .exceptions import CliException
+from .exceptions import CLError
 
 
 @dataclasses.dataclass
@@ -42,7 +42,7 @@ class Parser(abc.ABC):
         """Parser 'type' as string."""
 
 
-class CantParse(CliException):
+class CantParse(CLError):
     """Can't parse type from tokens."""
 
 

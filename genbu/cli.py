@@ -1,33 +1,33 @@
-"""Shell parser."""
+"""CLI parser."""
 
 import collections
 import sys
 import textwrap
 import typing as t
 
-from .exceptions import CliException
+from .exceptions import CLError
 from .forward import to_args_kwargs
 from .normalize import normalize
 from .params import Param, Renamer, UnknownOption, check_arguments
 
 
-ExceptionHandler = t.Callable[["ShellParser", CliException], t.NoReturn]
+ExceptionHandler = t.Callable[["CLInterface", CLError], t.NoReturn]
 
 
-def default_error_handler(cli: "ShellParser", exc: CliException) -> t.NoReturn:
+def default_error_handler(cli: "CLInterface", exc: CLError) -> t.NoReturn:
     """Default exception handler."""
     name = " ".join(cli.complete_name())
     sys.exit(f"{name}: {exc}")
 
 
-class ShellParser:  # pylint: disable=R0902,R0913
+class CLInterface:  # pylint: disable=R0902,R0913
     """Shell (argv) parser."""
     def __init__(self,
                  *,
                  name: str,
                  description: str,
                  params: t.Optional[list[Param]] = None,
-                 subparsers: t.Optional[t.Sequence["ShellParser"]] = None,
+                 subparsers: t.Optional[t.Sequence["CLInterface"]] = None,
                  callback: t.Callable[..., t.Any],
                  error_handler: ExceptionHandler = default_error_handler):
         assert not any(c.isspace() for c in name)
@@ -95,11 +95,11 @@ class ShellParser:  # pylint: disable=R0902,R0913
         return (name, value, list(deque))
 
     def takes_params(self) -> bool:
-        """Check if ShellParser can directly take Params."""
+        """Check if CLInterface can directly take Params."""
         return bool(self.params)
 
     def has_subcommands(self) -> bool:
-        """Check if ShellParser has named subcommands."""
+        """Check if CLInterface has named subcommands."""
         return bool(self.subparsers)
 
     def parse(self, argv: t.Sequence[str]) -> "Namespace":
@@ -113,7 +113,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         Note: parsers may throw CantParse.
         Long option expansion may raise UnknownOption.
         """
-        route: list["ShellParser"] = []
+        route: list["CLInterface"] = []
         deque = collections.deque(argv)
         try:
             while deque:
@@ -129,7 +129,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
             subparser = route[-1] if route else self
             optargs = self.parse_optargs(subparser, deque)
             return Namespace(optargs, route[0] if route else self)
-        except CliException as exc:
+        except CLError as exc:
             subparser = route[-1] if route else self
             subparser.error_handler(subparser, exc)
 
@@ -139,7 +139,7 @@ class ShellParser:  # pylint: disable=R0902,R0913
         return namespace.bind(namespace.cli.callback)
 
     @staticmethod
-    def parse_optargs(subparser: "ShellParser",
+    def parse_optargs(subparser: "CLInterface",
                       argv: t.Sequence[str],
                       ) -> dict[str, t.Any]:
         """Parse options and arguments from argv using custom subparser.
@@ -173,7 +173,7 @@ class Namespace:  # pylint: disable=too-few-public-methods
     - mapping from names to values
     - (optional) command prefix from argv
     """
-    def __init__(self, names: dict[str, t.Any], cli: ShellParser):
+    def __init__(self, names: dict[str, t.Any], cli: CLInterface):
         self.names = names
         self.cli = cli
 

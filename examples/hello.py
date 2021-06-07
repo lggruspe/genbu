@@ -1,5 +1,5 @@
 import sys
-from genbu import Param, ShellParser, combinators as comb, usage
+from genbu import CLInterface, Param, combinators as comb, usage
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -16,7 +16,7 @@ def main(*names: str, greeting: str = "Hello", help_: bool = False) -> str:
     return hello(*names, greeting=greeting)
 
 
-cli = ShellParser(
+cli = CLInterface(
     name=hello.__name__,
     description=hello.__doc__,
     params=[

@@ -1,4 +1,4 @@
-"""Shell options parser combinators."""
+"""Option arguments parser combinators."""
 
 import abc
 import collections
@@ -164,6 +164,9 @@ class Eof(Parser):
 
 class Bool(Parser):
     """Bool Parser."""
+    def __str__(self) -> str:
+        return "bool"
+
     def parse(self, tokens: Tokens) -> Result:
         """Parse into bool."""
         if tokens:
@@ -173,29 +176,3 @@ class Bool(Parser):
             if lower in ("0", "f", "false", "n", "no"):
                 return Result(False)
         raise CantParse
-
-
-def parse_opts(opts: dict[str, list[str]],
-               **parsers: Parser,
-               ) -> dict[str, t.Any]:
-    """Parse options into dict.
-
-    Just copy option args if no parser is provided for the option.
-    """
-    result = {}
-    for opt, args in opts.items():
-        parse = parsers.get(opt)
-        if parse is None:
-            result[opt] = args
-        else:
-            result[opt] = parse(collections.deque(args)).value
-    return result
-
-
-def parse_args(args: list[str], **parsers: Parser) -> dict[str, t.Any]:
-    """Parse arguments into dict.
-
-    Use parser name as key.
-    """
-    deque = collections.deque(args)
-    return {name: parse(deque).value for name, parse in parsers.items()}

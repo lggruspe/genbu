@@ -29,10 +29,9 @@ def command_block(group_name: str, parser: CLInterface) -> str:
     names = parser.subparsers.keys()
     result = f"{group_name}:\n{wrapped_list(*names)}\n\n"
     width = max(len(c) for c in names)
-    width += width % 4
+    width += 4 - width % 4  # So that name column is a multiple of 4
     for sub in parser.subparsers.values():
-        if sub.name:
-            result += f"    {sub.name.ljust(width)}    {sub.description}\n"
+        result += f"    {sub.name.ljust(width)}    {sub.description}\n"
     return result.strip()
 
 
@@ -67,10 +66,8 @@ def options_block(*params: Param) -> str:
     options = filter(bool, map(render_option, params))
 
     result = "options:\n"
-    for i, option in enumerate(options):
+    for option in options:
         if option is not None:
-            if option.count("\n") > 0 and i > 0:
-                result += "\n"
             result += textwrap.indent(option, "    ")
             result += "\n"
     return result.strip()
@@ -95,11 +92,15 @@ def render_example(parser: CLInterface) -> str:
 
     name = " ".join(parser.complete_name())
     result = "usage:  "
-    for i, example in enumerate(examples):
-        if i == 0:
-            result += f"{name} {example}\n"
-        else:
-            result += f"        {name} {example}\n"
+
+    if examples:
+        for i, example in enumerate(examples):
+            if i == 0:
+                result += f"{name} {example}\n"
+            else:
+                result += f"        {name} {example}\n"
+    else:
+        result += name
     return result.strip()
 
 
@@ -116,8 +117,7 @@ def usage(parser: CLInterface,
     if parser.takes_params():
         result += options_block(*parser.params)
     if parser.has_subcommands():
-        result += "\n\n"
         result += command_block("commands", parser)
     if footer is not None:
-        result += f"\n\n{textwrap.dedent(footer.strip())}"
+        result += textwrap.dedent(footer.strip())
     return result

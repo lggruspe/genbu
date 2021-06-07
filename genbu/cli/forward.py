@@ -3,7 +3,7 @@
 import inspect
 import typing as t
 
-from .exceptions import CLError
+from ..exceptions import CLError
 
 
 class MissingArgument(CLError):

@@ -6,10 +6,11 @@ import sys
 import textwrap
 import typing as t
 
-from .exceptions import CLError
+from ..exceptions import CLError
+from ..params import Param, UnknownOption
 from .forward import MissingArgument, to_args_kwargs
 from .normalize import normalize
-from .params import Param, UnknownOption
+from .renamer import Renamer
 
 
 ExceptionHandler = t.Callable[["CLInterface", CLError], t.NoReturn]
@@ -199,42 +200,3 @@ def check_arguments(optargs: dict[str, t.Any],
         return optargs
     except TypeError as exc:
         raise MissingArgument from exc
-
-
-Resolver = t.Callable[[t.Any, t.Any], t.Any]
-
-
-def rename(optargs: list[tuple[str, t.Any]],
-           name: str,
-           names: set[str],
-           resolve: Resolver,
-           ) -> list[tuple[str, t.Any]]:
-    """Rename parameters in optargs and resolve name conflicts."""
-    renamed = []
-    none = object()
-    final: t.Any = none
-    for param, value in optargs:
-        if param in names:
-            final = value if final is none else resolve(final, value)
-        else:
-            renamed.append((param, value))
-    if final is not none:
-        renamed.append((name, final))
-    return renamed
-
-
-class Renamer:  # pylint: disable=too-few-public-methods
-    """Options and arguments renamer."""
-    def __init__(self, params: t.Sequence[Param]):
-        self.params = params
-
-    def __call__(self, optargs: list[tuple[str, t.Any]]) -> dict[str, t.Any]:
-        """Rename parameters and convert into dict."""
-        for param in self.params:
-            optargs = rename(
-                optargs,
-                param.name,
-                set(param.optargs),
-                param.resolve
-            )
-        return dict(optargs)

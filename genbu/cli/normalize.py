@@ -2,7 +2,7 @@
 
 import typing as t
 
-from .params import Param, UnknownOption
+from ..params import Param, UnknownOption
 
 
 class AmbiguousOption(UnknownOption):

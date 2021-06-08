@@ -88,8 +88,9 @@ class CLInterface:  # pylint: disable=R0902,R0913
         assert prefix.startswith("-")
         name = self.expand(prefix)
         param = self.options.get(name)
-        if param is None:
-            raise UnknownOption(name)
+
+        assert param is not None
+
         parse = param.parse
 
         deque = collections.deque(args)
@@ -104,7 +105,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         """Check if CLInterface has named subcommands."""
         return bool(self.subparsers)
 
-    def parse(self, argv: t.Sequence[str]) -> "Namespace":
+    def parse(self, argv: t.Iterable[str]) -> "Namespace":
         """Parse commands, options and arguments from argv.
 
         Parse argv in three passes.
@@ -135,7 +136,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
             subparser = route[-1] if route else self
             subparser.error_handler(subparser, exc)
 
-    def __call__(self, argv: t.Sequence[str]) -> t.Any:
+    def __call__(self, argv: t.Iterable[str]) -> t.Any:
         """Parse argv and run callback."""
         namespace = self.parse(argv)
         return namespace.bind(namespace.cli.callback)

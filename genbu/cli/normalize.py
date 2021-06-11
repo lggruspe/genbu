@@ -55,7 +55,7 @@ def complete(options: dict[str, Param], prefix: str) -> str:
 def is_stacked(options: t.Container[str], opts: str) -> bool:
     """Check if short options in opts are all valid."""
     assert opts.startswith("-")
-    return all(f"-{opt}" in options for opt in opts)
+    return all(f"-{opt}" in options for opt in opts[1:])
 
 
 def _handle_long_option(normalized: Argv,

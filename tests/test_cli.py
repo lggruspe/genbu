@@ -1,4 +1,4 @@
-# pylint: disable=disallowed-name,redefined-outer-name
+# pylint: disable=disallowed-name,invalid-name,redefined-outer-name
 """Test genbu.cli."""
 
 import typing as t
@@ -51,15 +51,28 @@ def test_cli_call_with_short_options() -> None:
 
 def test_cli_call_with_stacked_options() -> None:
     """Test with stacked short options."""
+    def callback(a: str = "", b: str = "", c: str = "") -> str:
+        return a + b + c
+
     cli = make_cli(
         params=[
-            Param("a", ["-a"], parse=comb.One(int)),
-            Param("b", ["-b"], parse=comb.One(int)),
-            Param("c", ["-c"], parse=comb.One(int)),
+            Param("a", ["-a"], parse=comb.Emit("a")),
+            Param("b", ["-b"], parse=comb.Emit("b")),
+            Param("c", ["-c"], parse=comb.Emit("c")),
         ],
-        callback=lambda a, b, c: (a, b, c),
+        callback=callback,
     )
-    assert cli("-a 1 -b 2 -c 3".split()) == (1, 2, 3)
+    cases = [
+        ("", ""),
+        ("-a", "a"),
+        ("-ab", "ab"),
+        ("-ac", "ac"),
+        ("-bc", "bc"),
+        ("-abc", "abc"),
+        ("-cba", "abc"),
+    ]
+    for source, expected in cases:
+        assert cli(source.split()) == expected
 
 
 def test_cli_call_with_long_options() -> None:

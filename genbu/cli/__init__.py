@@ -8,7 +8,6 @@ import typing as t
 
 from ..exceptions import CLError
 from ..params import Param, UnknownOption
-from .forward import MissingArgument, to_args_kwargs
 from .normalize import normalize
 from .renamer import Renamer
 
@@ -61,32 +60,14 @@ class CLInterface:  # pylint: disable=R0902,R0913
             return (self.name,)
         return self.parent.complete_name() + (self.name,)
 
-    def expand(self, prefix: str) -> str:
-        """Expand prefix to long option.
-
-        Return prefix if it's a short option and it exists.
-        Otherwise, raise UnknownOption.
-        Also raise error if the prefix is ambiguous.
-        """
-        if not prefix.startswith("--"):
-            if prefix in self.options:
-                return prefix
-            raise UnknownOption(prefix)
-
-        candidates = [o for o in self.options if o.startswith(prefix)]
-        if len(candidates) != 1:
-            raise UnknownOption(prefix)
-        return candidates[0]
-
     def parse_opt(self,
-                  prefix: str,
+                  name: str,
                   args: t.Sequence[str],
                   ) -> tuple[str, t.Any, list[str]]:
         """Parse option.
 
         Return expanded option name, parsed value and unparsed tokens."""
-        assert prefix.startswith("-")
-        name = self.expand(prefix)
+        assert name.startswith("-")
         param = self.options.get(name)
 
         assert param is not None
@@ -167,7 +148,8 @@ class CLInterface:  # pylint: disable=R0902,R0913
             raise UnknownOption(deque[0])
 
         renamed = Renamer(subparser.params or ())(optargs)
-        return check_arguments(renamed, subparser.callback)
+        _ = to_args_kwargs(renamed, subparser.callback)  # Check arguments
+        return renamed
 
 
 class Namespace:  # pylint: disable=too-few-public-methods
@@ -186,18 +168,34 @@ class Namespace:  # pylint: disable=too-few-public-methods
         return function(*args, **kwargs)
 
 
-def check_arguments(optargs: dict[str, t.Any],
-                    function: t.Callable[..., t.Any],
-                    ) -> dict[str, t.Any]:
-    """Check if optargs contains all args that function needs.
+class MissingArgument(CLError):
+    """Missing argument to function."""
 
-    Return optargs if okay.
-    Raise MissingArguments if not.
+
+def to_args_kwargs(optargs: dict[str, t.Any],
+                   function: t.Callable[..., t.Any],
+                   ) -> tuple[list[t.Any], dict[str, t.Any]]:
+    """Convert optargs to (args, kwargs).
+
+    Does not check returned args and kwargs.
     """
-    args, kwargs = to_args_kwargs(optargs, function)
+    args = []
+    kwargs = {}
+
     sig = inspect.signature(function)
-    try:
-        sig.bind(*args, **kwargs)
-        return optargs
-    except TypeError as exc:
-        raise MissingArgument from exc
+    for name, param in sig.parameters.items():
+        value = optargs.get(name, param.default)
+        if value is param.empty:
+            raise MissingArgument(
+                f"{function.__name__}() missing required argument: '{name}'"
+            )
+        if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
+            args.append(value)
+        elif param.kind == param.VAR_POSITIONAL:
+            args.extend(value)
+        elif param.kind == param.KEYWORD_ONLY:
+            kwargs[name] = value
+        else:
+            assert param.kind == param.VAR_KEYWORD
+            kwargs.update(value)
+    return args, kwargs

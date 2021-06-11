@@ -22,14 +22,6 @@ class Argv:
         self.arguments = arguments or []
         self.current: list[str] = []
 
-    def __add__(self, other: "Argv") -> "Argv":
-        """Concatenate."""
-        options = self.options + other.options
-        arguments = self.arguments + other.arguments
-        argv = Argv(options, arguments)
-        argv.current = self.current + other.current
-        return argv
-
     def add_arg(self, arg: str) -> None:
         """Add argument to global arguments or to current option."""
         (self.current if self.current else self.arguments).append(arg)
@@ -62,8 +54,7 @@ def complete(options: dict[str, Param], prefix: str) -> str:
 
 def is_stacked(options: t.Container[str], opts: str) -> bool:
     """Check if short options in opts are all valid."""
-    if not opts.startswith("-"):
-        return False
+    assert opts.startswith("-")
     return all(f"-{opt}" in options for opt in opts)
 
 

@@ -46,7 +46,20 @@ def test_cli_call_with_short_options() -> None:
         ],
         callback=lambda x: x,
     )
-    assert cli("-a 4 -b 5 -c 6".split()) == 15
+    assert cli("-a4 -b 5 -c=6".split()) == 15
+
+
+def test_cli_call_with_stacked_options() -> None:
+    """Test with stacked short options."""
+    cli = make_cli(
+        params=[
+            Param("a", ["-a"], parse=comb.One(int)),
+            Param("b", ["-b"], parse=comb.One(int)),
+            Param("c", ["-c"], parse=comb.One(int)),
+        ],
+        callback=lambda a, b, c: (a, b, c),
+    )
+    assert cli("-a 1 -b 2 -c 3".split()) == (1, 2, 3)
 
 
 def test_cli_call_with_long_options() -> None:
@@ -65,7 +78,19 @@ def test_cli_call_with_long_options() -> None:
     assert cli("--foo 1 --bar 2 --baz 3".split()) == 6
 
 
-@pytest.mark.parametrize("source", ["1", "-i", "--invalid"])
+def test_cli_call_with_long_options_with_equals() -> None:
+    """Test with long options with equals (e.g. --foo=bar)."""
+    cli = make_cli(
+        params=[Param("value", ["--value"], parse=comb.One(int))],
+        callback=lambda value: value,
+    )
+
+    cases = [("--value=5", 5), ("--valu=6", 6), ("--val=7", 7)]
+    for source, expected in cases:
+        assert cli(source.split()) == expected
+
+
+@pytest.mark.parametrize("source", ["1", "-i", "-invalid", "--invalid"])
 def test_cli_call_with_unknown_options(source: str) -> None:
     """Program should abort if user enters unexpected option."""
     cli = make_cli()

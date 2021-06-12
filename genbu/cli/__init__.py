@@ -184,7 +184,14 @@ def to_args_kwargs(optargs: dict[str, t.Any],
 
     sig = inspect.signature(function)
     for name, param in sig.parameters.items():
-        value = optargs.get(name, param.default)
+        default = (
+            param.default if param.default is not param.empty
+            else () if param.kind == param.VAR_POSITIONAL
+            else {} if param.kind == param.VAR_KEYWORD
+            else param.empty
+        )
+
+        value = optargs.get(name, default)
         if value is param.empty:
             raise MissingArgument(
                 f"{function.__name__}() missing required argument: '{name}'"

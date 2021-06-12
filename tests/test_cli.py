@@ -109,6 +109,8 @@ def test_cli_call_with_unknown_options(source: str) -> None:
     cli = make_cli()
     with pytest.raises(SystemExit):
         cli(source.split())
+    with pytest.raises(SystemExit):
+        cli((source + "=foo").split())
 
 
 def test_cli_call_with_ambiguous_long_options() -> None:
@@ -143,6 +145,35 @@ def test_cli_call_with_missing_options() -> None:
         with pytest.raises(SystemExit):
             cli(source.split())
     assert cli("1 -b 2 --c 3".split()) == (1, 2, 3)
+
+
+def test_cli_call_with_various_parameter_kinds_in_callback() -> None:
+    """CLI arguments should properly be bound to callback params.
+
+    Tested parameter kinds:
+    - positional only
+    - var positional
+    - keyword only
+    - var keyword
+    """
+    def callback(a: int, *b: int, c: int, **d: int) -> t.Any:
+        return a, b, c, d
+
+    cli = make_cli(
+        params=[
+            Param("a", ["-a"], parse=comb.One(int)),
+            Param("b", ["-b"], parse=comb.Repeat(comb.One(int))),
+            Param("c", ["-c"], parse=comb.One(int)),
+            Param("d", ["-d"], parse=comb.Repeat(
+                comb.And(comb.One(str), comb.One(int)),
+                then=dict,
+            )),
+        ],
+        callback=callback,
+    )
+
+    assert cli("-a 1 -b 2 -c 3 -d k 4".split()) == (1, (2,), 3, {"k": 4})
+    assert cli("-a 1 -c 2".split()) == (1, (), 2, {})
 
 
 def test_cli_call_with_subparsers() -> None:

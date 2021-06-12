@@ -159,3 +159,22 @@ commands:
     nnn, ooo, ppp, qqq, rrr, sss, ttt, uuu, vvv, www, xxx, yyy, zzz
 
     aaa""")
+
+
+def test_usage_on_subparser() -> None:
+    """usage(...) example line should contain subcommand name."""
+    bar = CLInterface(
+        name="bar",
+        description="Bar subcommand",
+        callback=callback,
+    )
+    CLInterface(
+        name="foo",
+        description="Foo command",
+        callback=callback,
+        subparsers=[bar],
+    )
+
+    assert usage(bar).startswith("""usage:  foo bar
+
+Bar subcommand""")

@@ -105,6 +105,30 @@ def test_repeat_parse_valid(source: str,
     assert parse(as_tokens(source)).value == expected
 
 
+@pytest.mark.parametrize("source,parse", [
+    ("a", comb.Repeat(comb.One(int))),
+    ("1.5", comb.Repeat(comb.One(int))),
+])
+def test_repeat_parse_invalid(source: str, parse: comb.Parser) -> None:
+    """Repeat(p) parser should not modify input tokens."""
+    tokens = as_tokens(source)
+    before = tuple(tokens)
+
+    result = parse(as_tokens(source))
+    assert result.value == []
+    assert not result.empty
+
+    after = tuple(tokens)
+    assert before == after
+
+
+def test_repeat_parse_infinite() -> None:
+    """Repeat(p) parser should raise error to avoid infinite loops."""
+    parse = comb.Repeat(comb.Emit(True))
+    with pytest.raises(comb.CantParse):
+        parse(as_tokens("1 2 3 4 5"))
+
+
 @pytest.mark.parametrize("source,expected,parse", [
     ("", True, comb.Emit(True)),
     ("1 2 3", False, comb.Emit(False)),

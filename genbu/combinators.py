@@ -127,11 +127,11 @@ class Repeat(Parser):
         while tokens:
             try:
                 result = self.parser(tokens)
-                if not result.empty:
-                    value.append(result.value)
+                assert not result.empty
+                value.append(result.value)
             except CantParse:
                 break
-            if length == len(tokens):
+            if length == len(tokens):  # Avoid infinite loop
                 raise CantParse
             length = len(tokens)
         return Result(self.then(value))

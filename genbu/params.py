@@ -18,13 +18,18 @@ class UnknownOption(CLError):
 Resolver = t.Callable[[t.Any, t.Any], t.Any]
 
 
+def default_resolver(_: t.Any, other: t.Any) -> t.Any:
+    """Replace original value with new value."""
+    return other
+
+
 class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
     """CLI parameter descriptor."""
     def __init__(self,
                  name: str,
                  optargs: t.Optional[list[str]] = None,
                  parse: comb.Parser = comb.One(str),
-                 resolve: Resolver = lambda _, b: b,
+                 resolve: Resolver = default_resolver,
                  description: t.Optional[str] = None,
                  arg_description: t.Optional[str] = None):
         if optargs is None:

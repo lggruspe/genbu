@@ -1,6 +1,8 @@
 # pylint: disable=disallowed-name
 """Test genbu.usage."""
 
+import string
+
 from genbu import CLInterface, Param, combinators as comb, usage
 
 
@@ -85,3 +87,75 @@ def test_usage_with_header_and_footer() -> None:
 Hello.
 
 Bye."""
+
+
+def test_usage_with_multiple_examples() -> None:
+    """usage(...) should have properly indented example lines."""
+    bar = CLInterface(
+        name="bar",
+        description="Bar subcommand",
+        callback=callback,
+    )
+    foo = CLInterface(
+        name="foo",
+        description="Foo command.",
+        params=[
+            Param("help_", ["-?", "-h"], parse=comb.Emit(True)),
+        ],
+        callback=callback,
+        subparsers=[bar],
+    )
+    assert usage(foo).startswith("""usage:  foo [options]
+        foo <command> ...""")
+
+
+def test_usage_with_custom_arg_descriptions() -> None:
+    """usage(...) should use custom description instead of default one."""
+    cli = CLInterface(
+        name="test-cli",
+        description="Test CLInterface",
+        params=[
+            Param("default", ["-a"], parse=comb.Repeat(comb.One(int))),
+            Param(
+                "custom",
+                ["-b"],
+                parse=comb.Repeat(comb.One(int)),
+                arg_description="custom-arg-description",
+            )
+        ],
+        callback=callback,
+    )
+    assert usage(cli) == """usage:  test-cli [options]
+
+Test CLInterface
+
+options:
+    -a <[int...]>
+    -b custom-arg-description"""
+
+
+def test_usage_with_really_long_list_of_commands() -> None:
+    """usage(...) should break line."""
+    def make_subcli(name: str) -> CLInterface:
+        return CLInterface(
+            name=name,
+            description="Test subcommand",
+            callback=callback,
+        )
+
+    cli = CLInterface(
+        name="test-cli",
+        description="Test CLInterface",
+        subparsers=[make_subcli(3*a) for a in string.ascii_lowercase],
+        callback=callback,
+    )
+
+    assert usage(cli).startswith("""usage:  test-cli <command> ...
+
+Test CLInterface
+
+commands:
+    aaa, bbb, ccc, ddd, eee, fff, ggg, hhh, iii, jjj, kkk, lll, mmm,
+    nnn, ooo, ppp, qqq, rrr, sss, ttt, uuu, vvv, www, xxx, yyy, zzz
+
+    aaa""")

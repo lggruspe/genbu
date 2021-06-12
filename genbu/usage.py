@@ -64,12 +64,10 @@ def render_option(param: Param) -> t.Optional[str]:
 def options_block(*params: Param) -> str:
     """Construct options info block."""
     options = filter(bool, map(render_option, params))
-
     result = "options:\n"
     for option in options:
-        if option is not None:
-            result += textwrap.indent(option, "    ")
-            result += "\n"
+        assert option is not None
+        result += "{}\n".format(textwrap.indent(option, "    "))
     return result.strip()
 
 
@@ -79,7 +77,7 @@ def usage_example(parser: CLInterface) -> str:
         f"<{p.name}:{p.parse!s}>" for p in parser.params if not p.is_option()
     ]
     prefix = "[options] " if parser.options else ""
-    return prefix + " ".join(args)
+    return (prefix + " ".join(args)).strip()
 
 
 def render_example(parser: CLInterface) -> str:

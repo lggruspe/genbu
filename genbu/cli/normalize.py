@@ -7,7 +7,7 @@ from ..params import Param, UnknownOption
 
 class AmbiguousOption(UnknownOption):
     """Ambiguous long option prefix."""
-    def __init__(self, prefix: str, choices: list[str]):
+    def __init__(self, prefix: str, choices: t.List[str]):
         super().__init__(prefix)
         self.prefix = prefix
         self.choices = choices
@@ -16,11 +16,11 @@ class AmbiguousOption(UnknownOption):
 class Argv:
     """Normalized CLInterface argv."""
     def __init__(self,
-                 options: t.Optional[list[list[str]]] = None,
-                 arguments: t.Optional[list[str]] = None):
+                 options: t.Optional[t.List[t.List[str]]] = None,
+                 arguments: t.Optional[t.List[str]] = None):
         self.options = options or []
         self.arguments = arguments or []
-        self.current: list[str] = []
+        self.current: t.List[str] = []
 
     def add_arg(self, arg: str) -> None:
         """Add argument to global arguments or to current option."""
@@ -38,7 +38,7 @@ class Argv:
             self.current = []
 
 
-def complete(options: dict[str, Param], prefix: str) -> str:
+def complete(options: t.Dict[str, Param], prefix: str) -> str:
     """Complete long option prefix.
 
     Raise error if prefix is invalid or ambiguous.
@@ -59,7 +59,7 @@ def is_stacked(options: t.Container[str], opts: str) -> bool:
 
 
 def _handle_long_option(normalized: Argv,
-                        options: dict[str, Param],
+                        options: t.Dict[str, Param],
                         token: str,
                         ) -> None:
     """Handle long option token from argv."""
@@ -73,7 +73,7 @@ def _handle_long_option(normalized: Argv,
 
 
 def _handle_short_option(normalized: Argv,
-                         options: dict[str, Param],
+                         options: t.Dict[str, Param],
                          token: str,
                          ) -> None:
     """Handle short option token from argv."""

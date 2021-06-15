@@ -1,21 +1,19 @@
 """Option arguments parser combinators."""
 
 import abc
-import collections
-import dataclasses
 import typing as t
 
 from .exceptions import CLError
 
 
-@dataclasses.dataclass
-class Result:
+class Result:  # pylint: disable=too-few-public-methods
     """Parse result."""
-    value: t.Any
-    empty: bool = False
+    def __init__(self, value: t.Any, empty: bool = False):
+        self.value = value
+        self.empty = empty
 
 
-Tokens = collections.deque[str]
+Tokens = t.Deque[str]
 ThenFunction = t.Callable[[t.Sequence[t.Any]], t.Any]
 
 
@@ -104,8 +102,9 @@ class And(Parser):
 
     def parse(self, tokens: Tokens) -> Result:
         """Run all parsers and fail if any of the parsers fail."""
-        value = [r.value for p in self.parsers if not (r := p(tokens)).empty]
-        return Result(self.then(value))
+        results = (p(tokens) for p in self.parsers)
+        values = [r.value for r in results if not r.empty]
+        return Result(self.then(values))
 
 
 class Repeat(Parser):

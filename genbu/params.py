@@ -27,7 +27,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
     """CLI parameter descriptor."""
     def __init__(self,
                  name: str,
-                 optargs: t.Optional[list[str]] = None,
+                 optargs: t.Optional[t.List[str]] = None,
                  parse: comb.Parser = comb.One(str),
                  resolve: Resolver = default_resolver,
                  description: t.Optional[str] = None,

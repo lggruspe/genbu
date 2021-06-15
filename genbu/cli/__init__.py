@@ -27,7 +27,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
                  *,
                  name: str,
                  description: str,
-                 params: t.Optional[list[Param]] = None,
+                 params: t.Optional[t.List[Param]] = None,
                  subparsers: t.Optional[t.Sequence["CLInterface"]] = None,
                  callback: t.Callable[..., t.Any],
                  error_handler: ExceptionHandler = default_error_handler):
@@ -54,7 +54,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         for sub in self.subparsers.values():
             sub.parent = self
 
-    def complete_name(self) -> tuple[str, ...]:
+    def complete_name(self) -> t.Tuple[str, ...]:
         """Return complete command name (includes parents)."""
         if self.parent is None:
             return (self.name,)
@@ -63,7 +63,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
     def parse_opt(self,
                   name: str,
                   args: t.Sequence[str],
-                  ) -> tuple[str, t.Any, list[str]]:
+                  ) -> t.Tuple[str, t.Any, t.List[str]]:
         """Parse option.
 
         Return expanded option name, parsed value and unparsed tokens."""
@@ -97,7 +97,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         Note: parsers may throw CantParse.
         Long option expansion may raise UnknownOption.
         """
-        route: list["CLInterface"] = []
+        route: t.List["CLInterface"] = []
         deque = collections.deque(argv)
         try:
             while deque:
@@ -125,7 +125,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
     @staticmethod
     def parse_optargs(subparser: "CLInterface",
                       argv: t.Sequence[str],
-                      ) -> dict[str, t.Any]:
+                      ) -> t.Dict[str, t.Any]:
         """Parse options and arguments from argv using custom subparser.
 
         Assume program name and subcommands have been removed.
@@ -158,7 +158,7 @@ class Namespace:  # pylint: disable=too-few-public-methods
     - mapping from names to values
     - (optional) command prefix from argv
     """
-    def __init__(self, names: dict[str, t.Any], cli: CLInterface):
+    def __init__(self, names: t.Dict[str, t.Any], cli: CLInterface):
         self.names = names
         self.cli = cli
 
@@ -172,9 +172,9 @@ class MissingArgument(CLError):
     """Missing argument to function."""
 
 
-def to_args_kwargs(optargs: dict[str, t.Any],
+def to_args_kwargs(optargs: t.Dict[str, t.Any],
                    function: t.Callable[..., t.Any],
-                   ) -> tuple[list[t.Any], dict[str, t.Any]]:
+                   ) -> t.Tuple[t.List[t.Any], t.Dict[str, t.Any]]:
     """Convert optargs to (args, kwargs).
 
     Does not check returned args and kwargs.

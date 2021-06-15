@@ -10,7 +10,7 @@ from genbu.params import default_resolver
     ("foo", ["--foo=bar"]),
     ("bar", ["--bar baz"]),
 ])
-def test_param_with_invalid_option(name: str, optargs: list[str]) -> None:
+def test_param_with_invalid_option(name: str, optargs: t.List[str]) -> None:
     """Param should raise InvalidOption if option name has = or whitespace."""
     with pytest.raises(InvalidOption):
         Param(name=name, optargs=optargs)

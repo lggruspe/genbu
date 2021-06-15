@@ -1,0 +1,12 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "genbu"
+author = "Levi Gruspe"
+author-email = "mail.levig@gmail.com"
+home-page = "https://github.com/lggruspe/genbu"
+classifiers = [ "License :: OSI Approved :: MIT License",]
+description-file = "README.md"
+

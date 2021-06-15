@@ -1,3 +1,5 @@
+PYTHON_IMAGE=python:3.9-alpine
+
 all:	help
 
 # lint: Run linters
@@ -14,4 +16,10 @@ test:
 help:
 	@grep '^# \w\+: .\+$$' Makefile | sed 's/^# \(\w\+\: .\+\)$$/> \1/'
 
-.PHONY:	help lint test
+# docker: Run linters and tests in Docker container (default PYTHON_IMAGE=python:3.9-alpine)
+docker:
+	docker build -t test-genbu --build-arg PYTHON_IMAGE=$(PYTHON_IMAGE) .
+	docker run test-genbu
+
+
+.PHONY:	help lint test docker

@@ -2,7 +2,18 @@
 
 import typing as t
 
-from ..params import Param, UnknownOption
+from ..exceptions import CLError
+from ..params import Param
+
+
+class UnknownOption(CLError):
+    """Unrecognized option."""
+    def __init__(self, option: str):
+        super().__init__()
+        self.option = option
+
+    def __str__(self) -> str:
+        return f"received unrecognized option: {self.option}"
 
 
 class AmbiguousOption(UnknownOption):
@@ -11,6 +22,12 @@ class AmbiguousOption(UnknownOption):
         super().__init__(prefix)
         self.prefix = prefix
         self.choices = choices
+
+    def __str__(self) -> str:
+        message = f"cannot expand ambiguous option: {self.prefix}"
+        message += " could be any of "
+        message += ", ".join(self.choices)
+        return message
 
 
 class Argv:

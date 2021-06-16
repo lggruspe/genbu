@@ -42,6 +42,14 @@ class Parser(abc.ABC):
 
 class CantParse(CLError):
     """Can't parse type from tokens."""
+    def __init__(self, parser: Parser, tokens: t.Sequence[str]):
+        super().__init__(self)
+        self.parser = parser
+        self.tokens = tuple(tokens)
+
+    def __str__(self) -> str:
+        tokens = ' '.join(self.tokens)
+        return f"cannot parse {self.parser} from {tokens!r}"
 
 
 class One(Parser):
@@ -57,7 +65,7 @@ class One(Parser):
         try:
             return Result(self.func(tokens.popleft()))
         except Exception as exc:
-            raise CantParse from exc
+            raise CantParse(self, tokens) from exc
 
 
 class Or(Parser):
@@ -83,7 +91,7 @@ class Or(Parser):
                 return parse(tokens)
             except CantParse:
                 pass
-        raise CantParse
+        raise CantParse(self, tokens)
 
 
 class And(Parser):
@@ -157,7 +165,7 @@ class Eof(Parser):
     def parse(self, tokens: Tokens) -> Result:
         """Check if there are no tokens left."""
         if tokens:
-            raise CantParse
+            raise CantParse(self, tokens)
         return Result(None, empty=True)
 
 
@@ -174,4 +182,4 @@ class Bool(Parser):
                 return Result(True)
             if lower in ("0", "f", "false", "n", "no"):
                 return Result(False)
-        raise CantParse
+        raise CantParse(self, tokens)

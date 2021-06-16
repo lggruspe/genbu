@@ -10,7 +10,7 @@ def cat(path: Path) -> str:
     return path.read_text()
 
 
-def main(help_: bool = False, path: t.Optional[Path] = None) -> str:
+def main(path: t.Optional[Path] = None, help_: bool = False) -> str:
     """Entrypoint to cat."""
     if help_:
         sys.exit(usage(cli))

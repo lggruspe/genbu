@@ -4,15 +4,13 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
-from .exceptions import CLError
 
 
-class InvalidOption(CLError):
+class InvalidOption(ValueError):
     """Invalid option (e.g. contains '=' or ' ')."""
-
-
-class UnknownOption(CLError):
-    """Unrecognized option."""
+    def __init__(self, option: str):
+        super().__init__(option)
+        self.option = option
 
 
 Resolver = t.Callable[[t.Any, t.Any], t.Any]

@@ -1,4 +1,4 @@
-"""CLI exception handlers."""
+"""CLI exceptions."""
 
 
 class CLError(Exception):

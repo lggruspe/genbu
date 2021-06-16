@@ -7,8 +7,8 @@ import textwrap
 import typing as t
 
 from ..exceptions import CLError
-from ..params import Param, UnknownOption
-from .normalize import normalize
+from ..params import Param
+from .normalize import UnknownOption, normalize
 from .renamer import Renamer
 
 
@@ -170,6 +170,12 @@ class Namespace:  # pylint: disable=too-few-public-methods
 
 class MissingArgument(CLError):
     """Missing argument to function."""
+    def __init__(self, name: str):
+        super().__init__()
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"missing argument: {self.name}"
 
 
 def to_args_kwargs(optargs: t.Dict[str, t.Any],
@@ -193,9 +199,7 @@ def to_args_kwargs(optargs: t.Dict[str, t.Any],
 
         value = optargs.get(name, default)
         if value is param.empty:
-            raise MissingArgument(
-                f"{function.__name__}() missing required argument: '{name}'"
-            )
+            raise MissingArgument(name)
         if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
             args.append(value)
         elif param.kind == param.VAR_POSITIONAL:

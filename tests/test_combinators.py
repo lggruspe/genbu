@@ -123,10 +123,20 @@ def test_repeat_parse_invalid(source: str, parse: comb.Parser) -> None:
 
 
 def test_repeat_parse_infinite() -> None:
-    """Repeat(p) parser should raise error to avoid infinite loops."""
+    """Repeat(p) parser should break out of infinite loop.
+
+    Ex: Emit always parses successfully, so Repeat(Emit(...)) would keep
+    parsing forever if it doesn't break out of the loop.
+    """
     parse = comb.Repeat(comb.Emit(True))
-    with pytest.raises(comb.CantParse):
-        parse(as_tokens("1 2 3 4 5"))
+
+    tokens = as_tokens("1 2 3 4 5")
+    before = tuple(tokens)
+    result = parse(tokens)
+    after = tuple(tokens)
+
+    assert before == after == ("1", "2", "3", "4", "5")
+    assert result.value == [True]
 
 
 @pytest.mark.parametrize("source,expected,parse", [

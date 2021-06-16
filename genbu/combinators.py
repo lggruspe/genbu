@@ -131,7 +131,7 @@ class Repeat(Parser):
             except CantParse:
                 break
             if length == len(tokens):  # Avoid infinite loop
-                raise CantParse
+                break
             length = len(tokens)
         return Result(self.then(value))
 

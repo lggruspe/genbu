@@ -10,7 +10,7 @@ class UnsupportedType(TypeError):
     """Unsupported type."""
 
 
-def destructure(hint: t.Any) -> tuple[t.Any, tuple[t.Any, ...]]:
+def destructure(hint: t.Any) -> t.Tuple[t.Any, t.Tuple[t.Any, ...]]:
     """Return type hint origin and args."""
     return t.get_origin(hint), t.get_args(hint)
 

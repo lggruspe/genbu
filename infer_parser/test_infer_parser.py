@@ -23,7 +23,7 @@ def test_make_parser_for_bool() -> None:
         ["n"],
         ["no"],
     )
-    invalid: tuple[list[str], ...] = (
+    invalid: t.Tuple[t.List[str], ...] = (
         [],
         [""],
         [" false "],
@@ -42,7 +42,7 @@ def test_make_parser_for_bool() -> None:
 @pytest.mark.parametrize("tokens", [
     [], [""], ["none"], ["foo", "bar"],
 ])
-def test_make_parser_for_none(tokens: list[str]) -> None:
+def test_make_parser_for_none(tokens: t.List[str]) -> None:
     """Test make_parser(None)."""
     parse = make_parser(None)
     deque = collections.deque(tokens)
@@ -60,7 +60,7 @@ def test_make_parser_for_none(tokens: list[str]) -> None:
     (["9.0"], 9.0),
     (["4", "5"], 4.0),
 ])
-def test_make_parser_for_float(tokens: list[str], expected: float) -> None:
+def test_make_parser_for_float(tokens: t.List[str], expected: float) -> None:
     """Test make_parser(float)."""
     parse = make_parser(float)
     assert parse(collections.deque(tokens)).value == expected
@@ -69,7 +69,7 @@ def test_make_parser_for_float(tokens: list[str], expected: float) -> None:
 @pytest.mark.parametrize("tokens", [
     [], [""], ["test"],
 ])
-def test_make_parser_for_float_invalid_parse(tokens: list[str]) -> None:
+def test_make_parser_for_float_invalid_parse(tokens: t.List[str]) -> None:
     """Test make_parser(float) parser on invalid inputs."""
     parse = make_parser(float)
     with pytest.raises(CantParse):
@@ -81,7 +81,7 @@ def test_make_parser_for_float_invalid_parse(tokens: list[str]) -> None:
     (["9002"], 9002),
     (["4", "5"], 4),
 ])
-def test_make_parser_for_int(tokens: list[str], expected: int) -> None:
+def test_make_parser_for_int(tokens: t.List[str], expected: int) -> None:
     """Test make_parser(int)."""
     parse = make_parser(int)
     assert parse(collections.deque(tokens)).value == expected
@@ -90,7 +90,7 @@ def test_make_parser_for_int(tokens: list[str], expected: int) -> None:
 @pytest.mark.parametrize("tokens", [
     ["0.0"], [], [""],
 ])
-def test_make_parser_for_int_invalid_parse(tokens: list[str]) -> None:
+def test_make_parser_for_int_invalid_parse(tokens: t.List[str]) -> None:
     """Test make_parser(int) parser on invalid inputs."""
     parse = make_parser(int)
     with pytest.raises(CantParse):
@@ -102,7 +102,7 @@ def test_make_parser_for_int_invalid_parse(tokens: list[str]) -> None:
     (["", ""], ""),
     (["hello world"], "hello world"),
 ])
-def test_make_parser_for_str(tokens: list[str], expected: str) -> None:
+def test_make_parser_for_str(tokens: t.List[str], expected: str) -> None:
     """Test make_parser(str)."""
     parse = make_parser(str)
     assert parse(collections.deque(tokens)).value == expected
@@ -144,7 +144,7 @@ def test_make_parser_for_class() -> None:
     (["5", "6"], 5.0),
     (["0xe"], None),
 ])
-def test_make_parser_for_optional(tokens: list[str],
+def test_make_parser_for_optional(tokens: t.List[str],
                                   expected: t.Optional[float],
                                   ) -> None:
     """Test make_parser(Optional[...]).
@@ -165,7 +165,7 @@ def test_make_parser_for_optional(tokens: list[str],
     (["42"], 42),
     (["true", "true"], True),
 ])
-def test_make_parser_for_union(tokens: list[str],
+def test_make_parser_for_union(tokens: t.List[str],
                                expected: t.Union[int, bool],
                                ) -> None:
     """Test make_parser(Union[...]).
@@ -179,7 +179,7 @@ def test_make_parser_for_union(tokens: list[str],
 @pytest.mark.parametrize("tokens", [
     [], [""], ["e"]
 ])
-def test_make_parser_for_union_invalid_parse(tokens: list[str]) -> None:
+def test_make_parser_for_union_invalid_parse(tokens: t.List[str]) -> None:
     """Test make_parser(Union[...]) on invalid inputs."""
     parse = make_parser(t.Union[int, bool])
     with pytest.raises(CantParse):
@@ -370,7 +370,7 @@ def test_make_parser_for_optional_list() -> None:
     """
     parse = make_parser(t.Optional[list[int]])
 
-    cases: list[tuple[list[str], list[int]]] = [
+    cases: t.List[t.Tuple[t.List[str], t.List[int]]] = [
         ([], []),
         (["1", "2"], [1, 2]),
         (["1", "2", "3", "a"], [1, 2, 3]),

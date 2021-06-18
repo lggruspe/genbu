@@ -1,9 +1,13 @@
+# pylint: disable=missing-function-docstring,no-self-use
 """Test infer_parser."""
 
 import collections
 import typing as t
+
+from hypothesis import given, strategies as st
 import pytest
-from infer_parser import CantParse, make_parser
+
+from infer_parser import CantParse, Parser, make_parser
 
 
 def test_make_parser_for_bool() -> None:
@@ -39,20 +43,30 @@ def test_make_parser_for_bool() -> None:
             parse(collections.deque(tokens))
 
 
-@pytest.mark.parametrize("tokens", [
-    [], [""], ["none"], ["foo", "bar"],
-])
-def test_make_parser_for_none(tokens: t.List[str]) -> None:
-    """Test make_parser(None)."""
-    parse = make_parser(None)
-    deque = collections.deque(tokens)
-    before = len(deque)
-    result = parse(deque)
-    after = len(deque)
+class TestNone:
+    """Test make_parser(None) parser."""
+    @pytest.fixture(scope="class")
+    def parser(self) -> Parser:
+        return make_parser(None)
 
-    assert before == after
-    assert result.value is None
-    assert result.empty is False
+    @given(st.lists(st.text()))
+    def test_parser_emits_none_result(self,
+                                      parser: Parser,
+                                      tokens: t.List[str]) -> None:
+        result = parser(collections.deque(tokens))
+        assert result.value is None
+        assert result.empty is False
+
+    @given(st.lists(st.text()))
+    def test_parser_does_not_mutate_input(self,
+                                          parser: Parser,
+                                          tokens: t.List[str],
+                                          ) -> None:
+        deque = collections.deque(tokens)
+        before = tuple(deque)
+        parser(deque)
+        after = tuple(deque)
+        assert before == after
 
 
 @pytest.mark.parametrize("tokens,expected", [

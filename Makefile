@@ -14,7 +14,7 @@ lint:
 	mypy --strict infer_parser
 
 test:
-	pytest --cov=infer_parser --cov-report=term-missing
+	pytest --cov=infer_parser --cov-report=term-missing --hypothesis-verbosity=verbose
 
 dist:
 	python setup.py sdist bdist_wheel

@@ -1,6 +1,7 @@
 *.egg-info/
 *.pyc
 .coverage
+.hypothesis
 __pycache__/
 build/
 dist/

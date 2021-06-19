@@ -1,5 +1,6 @@
 """Make shell arguments parsers from type hints."""
 
+import sys
 import types
 import typing as t
 
@@ -114,16 +115,20 @@ class ParserMaker:
             type(None): comb.Emit(None),
         }
         self.parser_makers = {
-            dict: make_dict_parser,
-            list: make_list_parser,
-            t.Annotated: make_annotated_parser,
             t.Dict: make_dict_parser,
             t.Final: make_annotated_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
             t.Union: make_union_parser,
-            tuple: make_tuple_parser,
         }
+
+        if sys.version_info >= (3, 9):
+            self.parser_makers.update({
+                dict: make_dict_parser,
+                list: make_list_parser,
+                t.Annotated: make_annotated_parser,
+                tuple: make_tuple_parser,
+            })
 
     def cache(self, hint: t.Any, parser: comb.Parser) -> comb.Parser:
         """Cache and return parser."""

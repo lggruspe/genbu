@@ -52,7 +52,8 @@ class TestNone:
     @given(st.lists(st.text()))
     def test_parser_emits_none_result(self,
                                       parser: Parser,
-                                      tokens: t.List[str]) -> None:
+                                      tokens: t.List[str],
+                                      ) -> None:
         result = parser(collections.deque(tokens))
         assert result.value is None
         assert result.empty is False
@@ -321,47 +322,49 @@ def test_make_parser_for_dict() -> None:
             make_parser(type_)
 
 
-@pytest.mark.parametrize("hint", [
-    ...,
-    list[int, float],  # type: ignore
-    list[t.Literal[0]],
-    t.Any,
-    t.Callable[[int], int],
-    t.Literal[0],
-    t.Tuple[()],
-    tuple[()],  # type: ignore
-    tuple[...],  # type: ignore
-    tuple[str, str, ...],  # type: ignore
-])
-def test_make_parser_for_unsupported_type(hint: t.Any) -> None:
-    """make_parser should throw UnsupportedType on unsupported types."""
-    with pytest.raises(TypeError):
-        make_parser(hint)
+class TestUnsupported:
+    """Test make_parser on unsupported types."""
+    @pytest.fixture(scope="class")
+    def hints(self) -> t.Iterable[t.Any]:
+        result = [
+            (),
+            ...,
+            list[()],  # type: ignore
+            list[int, float],  # type: ignore
+            list[t.Literal[0]],
+            t.Any,
+            t.Callable[[int], int],
+            t.Literal[0],
+            t.Tuple[()],
+            tuple[(), ()],  # type: ignore
+            tuple[()],  # type: ignore
+            tuple[...],  # type: ignore
+            tuple[str, str, ...],  # type: ignore
+        ]
+        return result
+
+    def test_make_parser_raises_error(self, hints: t.Iterable[t.Any]) -> None:
+        for hint in hints:
+            with pytest.raises(TypeError):
+                make_parser(hint)
 
 
-@pytest.mark.parametrize("hint", [
-    (),
-    list[()],  # type: ignore
-    t.Tuple[()],
-    tuple[(), ()],  # type: ignore
-    tuple[()],  # type: ignore
-])
-def test_make_parser_for_empty_tuple(hint: t.Any) -> None:
-    """Test make_parser(...) should fail."""
-    with pytest.raises(TypeError):
-        make_parser(hint)
+class TestNested:
+    """Test make_parser on types with args."""
+    @pytest.fixture
+    def hints(self) -> t.Iterable[t.Any]:
+        return [
+            dict[tuple[str, int], tuple[str, tuple[int, float]]],
+            list[int],
+            tuple[int, dict[str, str]],  # type: ignore
+            tuple[str, ...],  # type: ignore
+            tuple[tuple[tuple[str, int]], list[int]],  # type: ignore
+        ]
 
-
-@pytest.mark.parametrize("hint", [
-    dict[tuple[str, int], tuple[str, tuple[int, float]]],
-    list[int],
-    tuple[int, dict[str, str]],  # type: ignore
-    tuple[str, ...],  # type: ignore
-    tuple[tuple[tuple[str, int]], list[int]],  # type: ignore
-])
-def test_make_parser_for_nested_type(hint: t.Any) -> None:
-    """Test make_parser on nested types."""
-    make_parser(hint)
+    def test_make_parser(self, hints: t.Iterable[t.Any]) -> None:
+        for hint in hints:
+            make_parser(hint)
+        assert True
 
 
 def test_make_parser_for_optional_fixed_length_tuple() -> None:

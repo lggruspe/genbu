@@ -4,10 +4,12 @@
 import collections
 import typing as t
 
-from hypothesis import given, strategies as st
+from hypothesis import example, given, strategies as st
 import pytest
 
 from infer_parser import CantParse, Parser, make_parser
+
+from . import strategies
 
 
 def test_make_parser_for_bool() -> None:
@@ -271,31 +273,40 @@ def test_make_parser_for_variable_length_tuple() -> None:
         make_parser(tuple[int, float, ...])  # type: ignore
 
 
-def test_make_parser_for_list() -> None:
-    """Test make_parser(list[...])."""
-    parse = make_parser(list[int])
-    assert parse(collections.deque([])).value == []
-    assert parse(collections.deque([""])).value == []
-    result = parse(collections.deque(["1", "2", "3"])).value
-    assert result == [1, 2, 3]
+class TestList:
+    """Test make_parser(list[int])."""
+    @given(
+        strategies.t_lists(int).map(make_parser),
+        st.lists(st.integers().map(str)),
+        st.lists(st.text()).filter(lambda x: not x or not x[0].isdecimal()),
+    )
+    def test_parser_emits_valid_prefix(self,
+                                       parser: Parser,
+                                       tokens: t.List[str],
+                                       trail: t.List[str],
+                                       ) -> None:
+        deque = collections.deque(tokens + trail)
+        result = parser(deque)
 
-    parse = make_parser(list[tuple[str, int]])
-    result = parse(collections.deque(["foo", "1", "bar", "2"]))
-    assert result.value == [("foo", 1), ("bar", 2)]
-    assert parse(collections.deque([])).value == []
+        assert not result.empty
+        assert result.value == [int(t) for t in tokens]
+        assert tuple(deque) == tuple(trail)
 
-    invalid = [
-        ["foo"],
-        ["foo", "bar"],
-    ]
-    for tokens in invalid:
+    @given(
+        strategies.t_lists(int).map(make_parser),
+        st.lists(st.text(st.characters(blacklist_categories=["Nd"]))),
+    )
+    @example(make_parser(t.List[int]), [])
+    @example(make_parser(t.List[int]), [""])
+    def test_parser_does_not_mutate_invalid_input(self,
+                                                  parser: Parser,
+                                                  tokens: t.List[str],
+                                                  ) -> None:
         deque = collections.deque(tokens)
-        before = len(deque)
-        result = parse(deque).value
-        after = len(deque)
-
+        before = tuple(deque)
+        parser(deque)
+        after = tuple(deque)
         assert before == after
-        assert result == []
 
 
 def test_make_parser_for_dict() -> None:
@@ -310,16 +321,28 @@ def test_make_parser_for_dict() -> None:
 
     assert parse(collections.deque(["1", "2", "3"])).value == {1: 2}
     assert parse(collections.deque(["1", "2", "3", "foo"])).value == {1: 2}
-    assert parse(collections.deque(["", ""])).value == {}
 
-    unsupported = [
-        dict[bool],  # type: ignore
-        dict[int, ...],  # type: ignore
-        dict[str, str, str],  # type: ignore
-    ]
-    for type_ in unsupported:
-        with pytest.raises(TypeError):
-            make_parser(type_)
+
+class TestDict:  # pylint: disable=too-few-public-methods
+    """Test make_parser on dict types."""
+    @given(
+        strategies.t_dicts(int, int).map(make_parser),
+        st.lists(st.text()).filter(
+            lambda x: not any(a.isdecimal() for a in x[:2]),
+        ),
+    )
+    def test_parser_on_invalid_input(self,
+                                     parser: Parser,
+                                     tokens: t.List[str],
+                                     ) -> None:
+        deque = collections.deque(tokens)
+        before = tuple(deque)
+        result = parser(deque)
+        after = tuple(deque)
+
+        assert before == after  # Does not mutate input
+        assert not result.empty
+        assert result.value == {}  # Emits {}
 
 
 class TestUnsupported:
@@ -329,6 +352,9 @@ class TestUnsupported:
         result = [
             (),
             ...,
+            dict[bool],  # type: ignore
+            dict[int, ...],  # type: ignore
+            dict[str, str, str],  # type: ignore
             list[()],  # type: ignore
             list[int, float],  # type: ignore
             list[t.Literal[0]],
@@ -380,21 +406,33 @@ def test_make_parser_for_optional_fixed_length_tuple() -> None:
         assert parse(collections.deque(tokens)).value == expected
 
 
-def test_make_parser_for_optional_list() -> None:
-    """Parser should never return None.
+class TestOptionalSequence:
+    """Test make_parser on optional sequence types."""
+    @given(
+        strategies.t_sequences(float).map(
+            lambda s: make_parser(t.Optional[s]),
+        ),
+        st.lists(st.floats(allow_nan=False).map(str)),
+    )
+    def test_parser_emits_sequence_of_emits(self,
+                                            parser: Parser,
+                                            tokens: t.List[str],
+                                            ) -> None:
+        expected = tuple(float(t) for t in tokens)
+        result = parser(collections.deque(tokens))
+        assert tuple(result.value) == expected
 
-    It should return [] instead.
-    """
-    parse = make_parser(t.Optional[list[int]])
-
-    cases: t.List[t.Tuple[t.List[str], t.List[int]]] = [
-        ([], []),
-        (["1", "2"], [1, 2]),
-        (["1", "2", "3", "a"], [1, 2, 3]),
-        (["a", "1"], []),
-    ]
-    for tokens, expected in cases:
-        assert parse(collections.deque(tokens)).value == expected
+    @given(
+        strategies.t_sequences(int).map(lambda s: make_parser(t.Optional[s])),
+        st.lists(st.text()).filter(lambda x: not x or not x[0].isdecimal()),
+    )
+    def test_parser_emits_empty_sequence_instead_of_none(self,
+                                                         parser: Parser,
+                                                         tokens: t.List[str],
+                                                         ) -> None:
+        result = parser(collections.deque(tokens))
+        assert not result.empty
+        assert result.value in ([], ())
 
 
 def test_make_parser_for_dict_with_variable_length_key() -> None:

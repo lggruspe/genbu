@@ -105,45 +105,48 @@ def make_tuple_parser(hint: t.Any) -> comb.Parser:
     return make_fixed_length_tuple_parser(hint)
 
 
-PARSERS = {
-    None: comb.Emit(None),
-    bool: comb.Bool(),
-    type(None): comb.Emit(None),
-}
+class ParserMaker:
+    """Parser maker with cache."""
+    def __init__(self) -> None:
+        self.parsers = {
+            None: comb.Emit(None),
+            bool: comb.Bool(),
+            type(None): comb.Emit(None),
+        }
+        self.parser_makers = {
+            dict: make_dict_parser,
+            list: make_list_parser,
+            t.Annotated: make_annotated_parser,
+            t.Dict: make_dict_parser,
+            t.Final: make_annotated_parser,
+            t.List: make_list_parser,
+            t.Tuple: make_tuple_parser,
+            t.Union: make_union_parser,
+            tuple: make_tuple_parser,
+        }
 
-PARSER_MAKERS = {
-    dict: make_dict_parser,
-    list: make_list_parser,
-    t.Annotated: make_annotated_parser,
-    t.Dict: make_dict_parser,
-    t.Final: make_annotated_parser,
-    t.List: make_list_parser,
-    t.Tuple: make_tuple_parser,
-    t.Union: make_union_parser,
-    tuple: make_tuple_parser,
-}
-
-
-def cache(hint: t.Any, parser: comb.Parser) -> comb.Parser:
-    """Cache and return parser."""
-    origin, _ = destructure(hint)
-    assert origin is None
-    PARSERS[hint] = parser
-    return parser
-
-
-def make_parser(hint: t.Any) -> comb.Parser:
-    """Make parser for type hint.
-
-    Caches simple types so that rerunning make_parser will give the same
-    result. Don't cache types with parameters, because it doesn't work with
-    Union and possibly other types.
-    """
-    if (parser := PARSERS.get(hint)) is not None:
+    def cache(self, hint: t.Any, parser: comb.Parser) -> comb.Parser:
+        """Cache and return parser."""
+        origin, _ = destructure(hint)
+        assert origin is None
+        self.parsers[hint] = parser
         return parser
-    if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
-        return cache(hint, comb.One(hint))
-    origin, _ = destructure(hint)
-    if (maker := PARSER_MAKERS.get(origin)) is not None:
-        return maker(hint)
-    raise UnsupportedType(hint)
+
+    def make_parser(self, hint: t.Any) -> comb.Parser:
+        """Make parser for type hint.
+
+        Caches simple types so that rerunning make_parser will give the same
+        result. Don't cache types with parameters, because it doesn't work with
+        Union and possibly other types.
+        """
+        if (parser := self.parsers.get(hint)) is not None:
+            return parser
+        if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
+            return self.cache(hint, comb.One(hint))
+        origin, _ = destructure(hint)
+        if (maker := self.parser_makers.get(origin)) is not None:
+            return maker(hint)
+        raise UnsupportedType(hint)
+
+
+make_parser = ParserMaker().make_parser

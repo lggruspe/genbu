@@ -2,6 +2,7 @@
 """Test infer_parser."""
 
 import collections
+import sys
 import typing as t
 
 from hypothesis import example, given, strategies as st
@@ -210,67 +211,118 @@ def test_make_parser_for_union_order() -> None:
     assert zero.value is False
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python 3.9")
 def test_make_parser_for_annotated() -> None:
     """Test make_parser on Annotated and Final types."""
-    assert make_parser(t.Final[int]) == make_parser(int)
     assert make_parser(t.Annotated[bool, None]) == make_parser(bool)
     assert make_parser(t.Annotated[str, ...]) == make_parser(str)
-    assert make_parser(t.Final[t.Annotated[float, None]]) == make_parser(float)
 
 
-def test_make_parser_for_fixed_length_tuple() -> None:
-    """Test make_parser on fixed-length tuple types."""
-    parse = make_parser(tuple[int, float])  # type: ignore
-    result = parse(collections.deque(["5", "5"])).value
-    assert isinstance(result, tuple)
-    assert isinstance(result[0], int)
-    assert isinstance(result[1], float)
-    assert result == (5, 5.0)
-
-    invalid: t.Iterable[t.Iterable[str]] = [
-        [], [""], ["5"], ["5.0", "5"], ["5", "a"]
-    ]
-    for tokens in invalid:
-        with pytest.raises(CantParse):
-            parse(collections.deque(tokens))
-
-    assert parse(collections.deque(["0", "1.5"])).value == (0, 1.5)
-
-    parse = make_parser(tuple[bool, bool, bool])  # type: ignore
-    assert parse(collections.deque(["true", "True", "1"])).value == \
-        (True, True, True)
-
-    parse = make_parser(tuple[tuple[int, ...]])  # type: ignore
-    assert parse(collections.deque(["0", "1", "2"])).value == ((0, 1, 2),)
+def test_make_parser_for_final() -> None:
+    """Test make parser on Final types."""
+    assert make_parser(t.Final[int]) == make_parser(int)
 
 
-def test_make_parser_for_variable_length_tuple() -> None:
-    """Test make_parser on variable-length tuple types."""
-    parse = make_parser(tuple[float, ...])  # type: ignore
+class TestFixedLengthTuple:
+    """Test make_parser(tuple[int, float])."""
+    @given(
+        strategies.t_tuples(int, float).map(make_parser),
+        st.from_type(t.Tuple[int, float]).map(  # type: ignore
+            lambda x: list(map(str, x))
+        ).filter(lambda x: x[-1] != "nan"),
+    )
+    def test_parser_parses_to_correct_type(self,
+                                           parser: Parser,
+                                           tokens: t.List[str],
+                                           ) -> None:
+        """Test make_parser on fixed-length tuple types."""
+        result = parser(collections.deque(tokens)).value
+        assert isinstance(result, tuple)
+        assert result == (int(tokens[0]), float(tokens[1]))
 
-    assert parse(collections.deque([])).value == ()
-    assert parse(collections.deque([""])).value == ()
+        first, second = result
+        assert isinstance(first, int)
+        assert isinstance(second, float)
 
-    result = parse(collections.deque(["0.0", "1.1", "2.2", "3.3"])).value
-    assert isinstance(result, tuple)
-    assert all(isinstance(r, float) for r in result)
-    assert result == (0.0, 1.1, 2.2, 3.3)
+    @given(strategies.t_tuples(int, float).map(make_parser))
+    def test_parser_on_invalid_input(self, parser: Parser) -> None:
+        invalid: t.Iterable[t.Iterable[str]] = [
+            [], [""], ["5"], ["5.0", "5"], ["5", "a"]
+        ]
+        for tokens in invalid:
+            with pytest.raises(CantParse):
+                parser(collections.deque(tokens))
 
-    parse = make_parser(tuple[int, ...])  # type: ignore
-    assert parse(collections.deque(["1", "2", "3"])).value == (1, 2, 3)
-    assert parse(collections.deque(["1", "2", "3", "four"])).value == (1, 2, 3)
 
-    parse = make_parser(tuple[tuple[int, float], ...])  # type: ignore
-    result = parse(collections.deque(["1", "2", "3", "4"]))
-    assert result.value == ((1, 2.0), (3, 4.0))
-    assert parse(collections.deque(["1", "2", "3"])).value == ((1, 2.0),)
+class TestVariableLengthTuple:
+    """Test make_parser(tuple[float, ...])."""
+    @given(
+        strategies.t_tuples(float, ...).map(make_parser),
+    )
+    def test_make_parser_for_variable_length_tuple(self,
+                                                   parser: Parser,
+                                                   ) -> None:
+        """Test make_parser on variable-length tuple types."""
+        assert parser(collections.deque([])).value == ()
+        assert parser(collections.deque([""])).value == ()
 
-    with pytest.raises(TypeError):
-        make_parser(tuple[...])  # type: ignore
-    with pytest.raises(TypeError):
-        make_parser(tuple[..., int])  # type: ignore
-    with pytest.raises(TypeError):
-        make_parser(tuple[int, float, ...])  # type: ignore
+        result = parser(collections.deque(["0.0", "1.1", "2.2", "3.3"])).value
+        assert isinstance(result, tuple)
+        assert all(isinstance(r, float) for r in result)
+        assert result == (0.0, 1.1, 2.2, 3.3)
+
+    @given(
+        strategies.t_tuples(int, ...).map(make_parser),
+        st.lists(st.integers().map(str)),
+        st.lists(st.text()).filter(
+            lambda x: not x or not x[0].strip().isdecimal()
+        ),
+    )
+    def test_parser_consumes_prefix(self,
+                                    parser: Parser,
+                                    tokens: t.List[str],
+                                    trail: t.List[str],
+                                    ) -> None:
+        deque = collections.deque(tokens + trail)
+        result = parser(deque)
+
+        assert result.value == tuple(map(int, tokens))
+        assert list(deque) == trail
+
+    @pytest.mark.skipif(sys.version_info < (3, 9),
+                        reason="requires python 3.9")
+    def test_make_parser_raises_error(self) -> None:
+        hints = [
+            tuple[...],  # type: ignore
+            tuple[..., int],  # type: ignore
+            tuple[int, float, ...],  # type: ignore
+        ]
+        for hint in hints:
+            with pytest.raises(TypeError):
+                make_parser(hint)
+
+
+class TestNestedSequence:
+    """Test make_parser on nested sequence types."""
+    def test_make_parser_for_nested_tuple(self) -> None:
+        """Parser should parse inner tuple correctly."""
+        parser = make_parser(t.Tuple[t.Tuple[int, float], ...])
+        result = parser(collections.deque(["1", "2", "3", "4"]))
+        assert result.value == ((1, 2.0), (3, 4.0))
+        assert parser(collections.deque(["1", "2", "3"])).value == ((1, 2.0),)
+
+    @given(
+        strategies.t_sequences(int),
+        st.lists(st.integers().map(str), min_size=1),
+    )
+    def test_parser_with_sequence_inside(self,
+                                         nested: t.Any,
+                                         tokens: t.List[str],
+                                         ) -> None:
+        parser = make_parser(t.List[nested])  # type: ignore
+        value = parser(collections.deque(tokens)).value
+        assert len(value) == 1
+        assert list(value[0]) == [int(t) for t in tokens]
 
 
 class TestList:
@@ -278,7 +330,9 @@ class TestList:
     @given(
         strategies.t_lists(int).map(make_parser),
         st.lists(st.integers().map(str)),
-        st.lists(st.text()).filter(lambda x: not x or not x[0].isdecimal()),
+        st.lists(st.text()).filter(
+            lambda x: not x or not x[0].strip().isdecimal(),
+        ),
     )
     def test_parser_emits_valid_prefix(self,
                                        parser: Parser,
@@ -309,22 +363,22 @@ class TestList:
         assert before == after
 
 
-def test_make_parser_for_dict() -> None:
-    """Test make_parser(dict[...])."""
-    parse = make_parser(dict[str, float])
-    result = parse(collections.deque(["foo", "1.0", "bar", "2.0"])).value
-    assert result == {"foo": 1.0, "bar": 2.0}
-
-    parse = make_parser(dict[int, int])
-    assert parse(collections.deque([])).value == {}
-    assert parse(collections.deque(["1", "2", "3", "4"])).value == {1: 2, 3: 4}
-
-    assert parse(collections.deque(["1", "2", "3"])).value == {1: 2}
-    assert parse(collections.deque(["1", "2", "3", "foo"])).value == {1: 2}
-
-
 class TestDict:  # pylint: disable=too-few-public-methods
     """Test make_parser on dict types."""
+    @given(
+        strategies.t_dicts(int, int).map(make_parser),
+        st.lists(st.integers().map(str)).filter(lambda x: len(x) % 2 != 0),
+    )
+    def test_parser_ignores_incomplete_key_value_pair(self,
+                                                      parser: Parser,
+                                                      tokens: t.List[str],
+                                                      ) -> None:
+        expected = {int(a): int(b) for a, b in zip(tokens[::2], tokens[1::2])}
+        deque = collections.deque(tokens)
+        result = parser(deque)
+        assert result.value == expected
+        assert list(deque) == tokens[-1:]
+
     @given(
         strategies.t_dicts(int, int).map(make_parser),
         st.lists(st.text()).filter(
@@ -350,28 +404,37 @@ class TestDict:  # pylint: disable=too-few-public-methods
 class TestUnsupported:
     """Test make_parser on unsupported types."""
     @pytest.fixture(scope="class")
-    def hints(self) -> t.Iterable[t.Any]:
-        result = [
-            (),
-            ...,
+    def generic_aliases(self) -> t.Iterable[t.Any]:
+        return [
             dict[bool],  # type: ignore
             dict[int, ...],  # type: ignore
             dict[str, str, str],  # type: ignore
             list[()],  # type: ignore
             list[int, float],  # type: ignore
             list[t.Literal[0]],
-            t.Any,
-            t.Callable[[int], int],
-            t.Literal[0],
-            t.Tuple[()],
             tuple[(), ()],  # type: ignore
             tuple[()],  # type: ignore
             tuple[...],  # type: ignore
             tuple[str, str, ...],  # type: ignore
         ]
-        return result
 
-    def test_make_parser_raises_error(self, hints: t.Iterable[t.Any]) -> None:
+    def test_make_parser_raises_error_on_invalid_generic_alias(
+        self,
+        generic_aliases: t.Iterable[t.Any],
+    ) -> None:
+        for hint in generic_aliases:
+            with pytest.raises(TypeError):
+                make_parser(hint)
+
+    def test_make_parser_raises_error_on_unsupported_types(self) -> None:
+        hints = [
+            (),
+            ...,
+            t.Any,
+            t.Callable[[int], int],
+            t.Literal[0],
+            t.Tuple[()],
+        ]
         for hint in hints:
             with pytest.raises(TypeError):
                 make_parser(hint)
@@ -397,7 +460,7 @@ class TestNested:
 
 def test_make_parser_for_optional_fixed_length_tuple() -> None:
     """Parser should try to parse tuple or return None."""
-    parse = make_parser(t.Optional[tuple[int, int]])  # type: ignore
+    parse = make_parser(t.Optional[t.Tuple[int, int]])
 
     cases = [
         (["1", "2", "3"], (1, 2)),
@@ -439,7 +502,7 @@ class TestOptionalSequence:
 
 def test_make_parser_for_dict_with_variable_length_key() -> None:
     """Parser should split keys and values correctly."""
-    parse = make_parser(dict[tuple[int, ...], str])  # type: ignore
+    parse = make_parser(t.Dict[t.Tuple[int, ...], str])
     cases: t.Any = [
         ([], {}),
         (["a", "b"], {(): "b"}),

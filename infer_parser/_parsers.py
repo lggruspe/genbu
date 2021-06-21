@@ -1,7 +1,6 @@
 """Make shell arguments parsers from type hints."""
 
 import sys
-import types
 import typing as t
 
 from genbu import combinators as comb
@@ -49,6 +48,11 @@ def destructure(hint: t.Any) -> t.Tuple[t.Any, t.Tuple[t.Any, ...]]:
     return t.get_origin(hint), t.get_args(hint)
 
 
+def is_generic_alias(hint: t.Any) -> bool:
+    """Check if hint is a generic alias."""
+    return t.get_origin(hint) is not None
+
+
 class ParserMaker:
     """Parser maker with cache."""
     def __init__(self) -> None:
@@ -58,19 +62,15 @@ class ParserMaker:
             type(None): comb.Emit(None),
         }
         self.parser_makers = {
+            dict: make_dict_parser,
+            list: make_list_parser,
             t.Dict: make_dict_parser,
             t.Final: self.make_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
             t.Union: make_union_parser,
+            tuple: make_tuple_parser,
         }
-
-        if sys.version_info >= (3, 9):
-            self.parser_makers.update({
-                dict: make_dict_parser,
-                list: make_list_parser,
-                tuple: make_tuple_parser,
-            })
 
     def cache(self, hint: t.Any, parser: comb.Parser) -> comb.Parser:
         """Cache and return parser."""
@@ -88,7 +88,7 @@ class ParserMaker:
         """
         if (parser := self.parsers.get(hint)) is not None:
             return parser
-        if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
+        if isinstance(hint, type) and not is_generic_alias(hint):
             return self.cache(hint, comb.One(hint))
 
         origin, args = destructure(hint)

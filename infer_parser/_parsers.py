@@ -11,99 +11,42 @@ class UnsupportedType(TypeError):
     """Unsupported type."""
 
 
-def destructure(hint: t.Any) -> t.Tuple[t.Any, t.Tuple[t.Any, ...]]:
-    """Return type hint origin and args."""
-    return t.get_origin(hint), t.get_args(hint)
+def make_optional_parser(arg: t.Any) -> comb.Parser:
+    """Return parser for t.Optional[arg]."""
+    return comb.Or(make_parser(arg), make_parser(type(None)))
 
 
-def make_annotated_parser(hint: t.Any) -> comb.Parser:
-    """Return parser for Final and Annotated types."""
-    origin, args = destructure(hint)
-    assert origin in (t.Annotated, t.Final)
-    assert len(args) > 0
-    return make_parser(args[0])
-
-
-def make_optional_parser(hint: t.Any) -> comb.Parser:
-    """Make Optional[...] parser."""
-    origin, args = destructure(hint)
-    assert origin is t.Union
-    assert len(args) == 2
-    assert type(None) in args
-
-    parsers = [
-        make_parser(arg) for arg in args
-        if arg is not type(None)  # noqa:E721
-    ]
-    assert len(parsers) == 1
-    return comb.Or(parsers[0], make_parser(type(None)))
-
-
-def make_union_parser(hint: t.Any) -> comb.Parser:
-    """Return union of parsers of hint args."""
-    origin, args = destructure(hint)
-    assert origin is t.Union
+def make_union_parser(*args: t.Any) -> comb.Parser:
+    """Return parser for t.Union[args]."""
     if len(args) == 2 and type(None) in args:
-        return make_optional_parser(hint)
+        arg = args[0] if args[0] is not type(None) else args[1]  # noqa:E721
+        return make_optional_parser(arg)
     return comb.Or(*map(make_parser, args))
 
 
-def make_list_parser(hint: t.Any) -> comb.Parser:
-    """Return list parser."""
-    origin, args = destructure(hint)
-    assert origin in (list, t.List)
-    if len(args) != 1:
-        raise UnsupportedType(hint)
-    return comb.Repeat(make_parser(args[0]))
+def make_list_parser(arg: t.Any) -> comb.Parser:
+    """Return parser for list[arg] and t.List[arg]."""
+    return comb.Repeat(make_parser(arg))
 
 
-def make_dict_parser(hint: t.Any) -> comb.Parser:
-    """Return dict parser."""
-    origin, args = destructure(hint)
-    assert origin in (dict, t.Dict)
-    if len(args) != 2:
-        raise UnsupportedType(hint)
-    return comb.Repeat(
-        comb.And(
-            make_parser(args[0]),
-            make_parser(args[1]),
-        ),
-        then=dict,
-    )
+def make_dict_parser(key: t.Any, val: t.Any) -> comb.Parser:
+    """Return parser for dict[key, val] and t.Dict[key, val]."""
+    return comb.Repeat(comb.And(make_parser(key), make_parser(val)), then=dict)
 
 
-def make_variable_length_tuple_parser(hint: t.Any) -> comb.Parser:
-    """Return parser for variable-length tuple."""
-    origin, args = destructure(hint)
-    assert origin in (tuple, t.Tuple)
-    assert ... in args
-    if len(args) != 2 or args[0] == ...:
-        raise UnsupportedType(hint)
-    return comb.Repeat(make_parser(args[0]), then=tuple)
+def make_tuple_parser(*args: t.Any) -> comb.Parser:
+    """Return parser for tuple[args] and t.Tuple[args]."""
+    if not args:
+        raise UnsupportedType(t.Tuple[args])
+
+    if len(args) == 2 and args[-1] == ...:
+        return comb.Repeat(make_parser(args[0]), then=tuple)
+    return comb.And(*map(make_parser, args), then=tuple)
 
 
-def make_fixed_length_tuple_parser(hint: t.Any) -> comb.Parser:
-    """Return parser for fixed-length tuple.
-
-    Note: fixed-length refers to root tuple.
-    It may still contain variable-length tuples.
-    """
-    origin, args = destructure(hint)
-    assert origin in (tuple, t.Tuple)
-    assert ... not in args
-    parsers = [make_parser(arg) for arg in args]
-    if not parsers:
-        raise UnsupportedType(hint)
-    return comb.And(*parsers, then=tuple)
-
-
-def make_tuple_parser(hint: t.Any) -> comb.Parser:
-    """Make tuple parser."""
-    origin, args = destructure(hint)
-    assert origin in (tuple, t.Tuple)
-    if ... in args:
-        return make_variable_length_tuple_parser(hint)
-    return make_fixed_length_tuple_parser(hint)
+def destructure(hint: t.Any) -> t.Tuple[t.Any, t.Tuple[t.Any, ...]]:
+    """Return type hint origin and args."""
+    return t.get_origin(hint), t.get_args(hint)
 
 
 class ParserMaker:
@@ -116,7 +59,7 @@ class ParserMaker:
         }
         self.parser_makers = {
             t.Dict: make_dict_parser,
-            t.Final: make_annotated_parser,
+            t.Final: self.make_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
             t.Union: make_union_parser,
@@ -126,7 +69,6 @@ class ParserMaker:
             self.parser_makers.update({
                 dict: make_dict_parser,
                 list: make_list_parser,
-                t.Annotated: make_annotated_parser,
                 tuple: make_tuple_parser,
             })
 
@@ -148,9 +90,12 @@ class ParserMaker:
             return parser
         if isinstance(hint, type) and not isinstance(hint, types.GenericAlias):
             return self.cache(hint, comb.One(hint))
-        origin, _ = destructure(hint)
+
+        origin, args = destructure(hint)
+        if sys.version_info >= (3, 9) and origin == t.Annotated:
+            return self.make_parser(args[0])
         if (maker := self.parser_makers.get(origin)) is not None:
-            return maker(hint)
+            return maker(*args)  # type: ignore
         raise UnsupportedType(hint)
 
 

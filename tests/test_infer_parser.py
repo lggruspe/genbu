@@ -328,7 +328,9 @@ class TestDict:  # pylint: disable=too-few-public-methods
     @given(
         strategies.t_dicts(int, int).map(make_parser),
         st.lists(st.text()).filter(
-            lambda x: not any(a.isdecimal() for a in x[:2]),
+            lambda x: (
+                len(x) < 2 or any(not a.strip().isdecimal() for a in x[:2])
+            )
         ),
     )
     def test_parser_on_invalid_input(self,

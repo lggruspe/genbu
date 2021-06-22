@@ -11,7 +11,7 @@ help:
 lint:
 	pylint infer_parser tests
 	flake8 --max-complexity=7 infer_parser tests
-	mypy --strict infer_parser tests
+	mypy --strict --no-warn-unused-ignores infer_parser tests
 
 test:
 	pytest --cov=infer_parser --cov=tests --cov-report=term-missing --hypothesis-verbosity=verbose

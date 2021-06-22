@@ -206,7 +206,7 @@ def test_make_parser_for_union_invalid_parse(tokens: t.List[str]) -> None:
 
 
 def test_make_parser_for_union_order() -> None:
-    """MAke sure type hint arguments are checked in order."""
+    """Make sure type hint arguments are checked in order."""
     parse = make_parser(t.Union[bool, int])
     zero = parse(collections.deque(["0"]))
     assert zero.value is False
@@ -215,14 +215,16 @@ def test_make_parser_for_union_order() -> None:
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python 3.9")
 @pytest.mark.parametrize("args", [(bool, None), (str, ...)])
 def test_make_parser_for_annotated(args: t.Any) -> None:
-    """Test make_parser on Annotated and Final types."""
-    annotated = t.Annotated  # pylint: disable=no-member
+    """Test make_parser on Annotated types."""
+    annotated = getattr(t, "Annotated")
     assert make_parser(annotated[args]) == make_parser(args[0])
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python 3.8")
 def test_make_parser_for_final() -> None:
     """Test make parser on Final types."""
-    assert make_parser(t.Final[int]) == make_parser(int)
+    final = getattr(t, "Final")  # pylint: disable=no-member
+    assert make_parser(final[int]) == make_parser(int)
 
 
 @pytest.mark.parametrize("typ", [int, float, str])
@@ -464,8 +466,10 @@ class TestNested:
     @pytest.mark.skipif(sys.version_info < (3, 9), reason="needs python 3.9")
     def test_nested_generic_aliases(self) -> None:
         hints = [
-            dict[tuple[str, int], tuple[str, tuple[int, float]]],
-            list[int],
+            dict[  # type: ignore
+                tuple[str, int], tuple[str, tuple[int, float]]  # type: ignore
+            ],
+            list[int],  # type: ignore
             tuple[int, dict[str, str]],  # type: ignore
             tuple[str, ...],  # type: ignore
             tuple[tuple[tuple[str, int]], list[int]],  # type: ignore
@@ -529,17 +533,20 @@ def test_make_parser_for_dict_with_variable_length_key() -> None:
         assert parse(collections.deque(tokens)).value == expected
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python 3.8")
 class TestLiteral:
     """Test make_parser on t.Literal[...]."""
     @pytest.mark.parametrize("integer", list(range(10)))
     def test_parser_on_valid_int_literals(self, integer: int) -> None:
-        parser = make_parser(t.Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        literal = getattr(t, "Literal")  # pylint: disable=no-member
+        parser = make_parser(literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         result = parser(collections.deque([str(integer)]))
         assert result.value == integer
 
     @given(st.integers().filter(lambda x: x < 0 or x > 9))
     def test_parser_on_invalid_int_literals(self, integer: int) -> None:
-        parser = make_parser(t.Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        literal = getattr(t, "Literal")  # pylint: disable=no-member
+        parser = make_parser(literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         with pytest.raises(CantParse):
             parser(collections.deque([str(integer)]))
 

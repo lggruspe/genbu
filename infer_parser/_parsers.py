@@ -108,6 +108,7 @@ class ParserMaker:
             t.Dict: make_dict_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
+            t.Type: self.make_parser,
             t.Union: make_union_parser,
             tuple: make_tuple_parser,
             type: self.make_parser,

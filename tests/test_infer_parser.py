@@ -181,17 +181,17 @@ def test_make_parser_for_optional(tokens: t.List[str],
     (["false"], False),
     (["False"], False),
     (["0"], 0),
-    (["42"], 42),
+    (["42.1"], 42.1),
     (["true", "true"], True),
 ])
 def test_make_parser_for_union(tokens: t.List[str],
-                               expected: t.Union[int, bool],
+                               expected: t.Union[float, bool],
                                ) -> None:
     """Test make_parser(Union[...]).
 
     Order of type parameters matters.
     """
-    parse = make_parser(t.Union[int, bool])
+    parse = make_parser(t.Union[float, bool])
     assert parse(collections.deque(tokens)).value == expected
 
 
@@ -200,14 +200,17 @@ def test_make_parser_for_union(tokens: t.List[str],
 ])
 def test_make_parser_for_union_invalid_parse(tokens: t.List[str]) -> None:
     """Test make_parser(Union[...]) on invalid inputs."""
-    parse = make_parser(t.Union[int, bool])
+    parse = make_parser(t.Union[float, bool])
     with pytest.raises(CantParse):
         parse(collections.deque(tokens))
 
 
 def test_make_parser_for_union_order() -> None:
-    """Make sure type hint arguments are checked in order."""
-    parse = make_parser(t.Union[bool, int])
+    """Make sure type hint arguments are checked in order.
+
+    Note: t.Union[bool, int] becomes int in python 3.6.
+    """
+    parse = make_parser(t.Union[bool, float])
     zero = parse(collections.deque(["0"]))
     assert zero.value is False
 

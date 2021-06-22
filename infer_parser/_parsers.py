@@ -6,10 +6,6 @@ import typing as t
 from genbu import combinators as comb
 
 
-class UnsupportedType(TypeError):
-    """Unsupported type."""
-
-
 def make_optional_parser(arg: t.Any) -> comb.Parser:
     """Return parser for t.Optional[arg]."""
     return comb.Or(make_parser(arg), make_parser(type(None)))
@@ -59,9 +55,8 @@ def make_dict_parser(key: t.Any, val: t.Any) -> comb.Parser:
 
 def make_tuple_parser(*args: t.Any) -> comb.Parser:
     """Return parser for tuple[args] and t.Tuple[args]."""
-    if not args:
-        raise UnsupportedType(t.Tuple[args])
-
+    if args in ((), ((),)):
+        return comb.Emit(())
     if len(args) == 2 and args[-1] == ...:
         return comb.Repeat(make_parser(args[0]), then=tuple)
     return comb.And(*map(make_parser, args), then=tuple)
@@ -91,6 +86,10 @@ def destructure(hint: t.Any) -> t.Tuple[t.Any, t.Tuple[t.Any, ...]]:
 def is_generic_alias(hint: t.Any) -> bool:
     """Check if hint is a generic alias."""
     return get_origin(hint) is not None
+
+
+class UnsupportedType(TypeError):
+    """Unsupported type."""
 
 
 class ParserMaker:

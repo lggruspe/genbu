@@ -25,6 +25,8 @@ def t_dicts(key: t.Any, val: t.Any
 
 def t_tuples(*args: t.Any) -> st.SearchStrategy[t.Type[t.Tuple[t.Any, ...]]]:
     """Generate tuple types."""
+    if args == ((),):
+        args = ()
     choices = [t.Tuple[args]]
     if sys.version_info >= (3, 9):
         choices.append(tuple[args])  # type: ignore

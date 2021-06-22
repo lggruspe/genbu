@@ -332,6 +332,7 @@ class TestNestedSequence:
                                          nested: t.Any,
                                          tokens: t.List[str],
                                          ) -> None:
+        """Only the first type arg ever gets used."""
         parser = make_parser(t.List[nested])  # type: ignore
         value = parser(collections.deque(tokens)).value
         assert len(value) == 1
@@ -425,7 +426,6 @@ class TestUnsupported:
             list[()],  # type: ignore
             list[int, float],  # type: ignore
             tuple[(), ()],  # type: ignore
-            tuple[()],  # type: ignore
             tuple[...],  # type: ignore
             tuple[str, str, ...],  # type: ignore
         ]
@@ -445,7 +445,6 @@ class TestUnsupported:
             ...,
             t.Any,
             t.Callable[[int], int],
-            t.Tuple[()],
         ]
         for hint in hints:
             with pytest.raises(TypeError):
@@ -561,3 +560,20 @@ def test_lit_str(value: t.Any) -> None:
     assert str(parser) == str(value)
     result = parser(collections.deque([str(value)]))
     assert result.value == value
+
+
+@given(
+    strategies.t_tuples(()),
+    st.lists(st.text()),
+)
+def test_empty_tuple(hint: t.Any, tokens: t.List[str]) -> None:
+    """Parser should emit () without modifying the input."""
+    parser = make_parser(hint)
+    deque = collections.deque(tokens)
+    before = list(deque)
+    result = parser(deque)
+    after = list(deque)
+
+    assert before == after
+    assert not result.empty
+    assert result.value == ()

@@ -1,3 +1,4 @@
+# pylint: disable=unsubscriptable-object
 """Strategies for generating type annotations."""
 
 import sys

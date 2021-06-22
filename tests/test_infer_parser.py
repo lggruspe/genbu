@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring,no-self-use
+# pylint: disable=missing-function-docstring,no-self-use,unsubscriptable-object
 """Test infer_parser."""
 
 import collections
@@ -212,10 +212,11 @@ def test_make_parser_for_union_order() -> None:
 
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python 3.9")
-def test_make_parser_for_annotated() -> None:
+@pytest.mark.parametrize("args", [(bool, None), (str, ...)])
+def test_make_parser_for_annotated(args: t.Any) -> None:
     """Test make_parser on Annotated and Final types."""
-    assert make_parser(t.Annotated[bool, None]) == make_parser(bool)
-    assert make_parser(t.Annotated[str, ...]) == make_parser(str)
+    annotated = t.Annotated  # pylint: disable=no-member
+    assert make_parser(annotated[args]) == make_parser(args[0])
 
 
 def test_make_parser_for_final() -> None:
@@ -418,6 +419,7 @@ class TestUnsupported:
             tuple[str, str, ...],  # type: ignore
         ]
 
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="needs python 3.9")
     def test_make_parser_raises_error_on_invalid_generic_alias(
         self,
         generic_aliases: t.Iterable[t.Any],
@@ -442,17 +444,27 @@ class TestUnsupported:
 
 class TestNested:
     """Test make_parser on types with args."""
-    @pytest.fixture
-    def hints(self) -> t.Iterable[t.Any]:
-        return [
+    def test_nested_types(self) -> None:
+        hints = [
+            t.Dict[t.Tuple[str, int], t.Tuple[str, t.Tuple[int, float]]],
+            t.List[int],
+            t.Tuple[int, t.Dict[str, str]],
+            t.Tuple[str, ...],
+            t.Tuple[t.Tuple[t.Tuple[str, int]], t.List[int]],
+        ]
+        for hint in hints:
+            make_parser(hint)
+        assert True
+
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="needs python 3.9")
+    def test_nested_generic_aliases(self) -> None:
+        hints = [
             dict[tuple[str, int], tuple[str, tuple[int, float]]],
             list[int],
             tuple[int, dict[str, str]],  # type: ignore
             tuple[str, ...],  # type: ignore
             tuple[tuple[tuple[str, int]], list[int]],  # type: ignore
         ]
-
-    def test_make_parser(self, hints: t.Iterable[t.Any]) -> None:
         for hint in hints:
             make_parser(hint)
         assert True

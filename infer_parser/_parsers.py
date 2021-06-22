@@ -92,7 +92,10 @@ class ParserMaker:
             return self.cache(hint, comb.One(hint))
 
         origin, args = destructure(hint)
-        if sys.version_info >= (3, 9) and origin == t.Annotated:
+        if (
+            sys.version_info >= (3, 9)
+            and origin == t.Annotated  # pylint: disable=no-member
+        ):
             return self.make_parser(args[0])
         if (maker := self.parser_makers.get(origin)) is not None:
             return maker(*args)  # type: ignore

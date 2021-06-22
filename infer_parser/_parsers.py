@@ -23,6 +23,33 @@ def make_union_parser(*args: t.Any) -> comb.Parser:
     return comb.Or(*map(make_parser, args))
 
 
+class SupportsStr(t.Protocol):  # pylint: disable=too-few-public-methods
+    """A type that has __str__."""
+    def __str__(self) -> str:
+        """Convert to string."""
+
+
+class Lit(comb.Parser):
+    """Literal parser."""
+    def __init__(self, value: SupportsStr):
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def parse(self, tokens: t.Deque[str]) -> comb.Result:
+        """Parse value."""
+        if not tokens or tokens[0] != str(self.value):
+            raise comb.CantParse(self, tokens)
+        tokens.popleft()
+        return comb.Result(self.value)
+
+
+def make_literal_parser(*args: t.Any) -> comb.Parser:
+    """Return parser for t.Literal[args]."""
+    return comb.Or(*map(Lit, args))
+
+
 def make_list_parser(arg: t.Any) -> comb.Parser:
     """Return parser for list[arg] and t.List[arg]."""
     return comb.Repeat(make_parser(arg))
@@ -64,12 +91,14 @@ class ParserMaker:
         self.parser_makers = {
             dict: make_dict_parser,
             list: make_list_parser,
+            t.ClassVar: self.make_parser,
             t.Dict: make_dict_parser,
             t.Final: self.make_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
             t.Union: make_union_parser,
             tuple: make_tuple_parser,
+            type: self.make_parser,
         }
 
     def cache(self, hint: t.Any, parser: comb.Parser) -> comb.Parser:
@@ -94,9 +123,11 @@ class ParserMaker:
         origin, args = destructure(hint)
         if (
             sys.version_info >= (3, 9)
-            and origin == t.Annotated  # pylint: disable=no-member
+            and origin is t.Annotated  # pylint: disable=no-member
         ):
             return self.make_parser(args[0])
+        if origin is t.Literal and len(args) > 0:
+            return make_literal_parser(*args)
         if (maker := self.parser_makers.get(origin)) is not None:
             return maker(*args)  # type: ignore
         raise UnsupportedType(hint)

@@ -9,6 +9,7 @@ from hypothesis import example, given, strategies as st
 import pytest
 
 from infer_parser import CantParse, Parser, make_parser
+from infer_parser._parsers import Lit
 
 from . import strategies
 
@@ -224,6 +225,12 @@ def test_make_parser_for_final() -> None:
     assert make_parser(t.Final[int]) == make_parser(int)
 
 
+@pytest.mark.parametrize("typ", [int, float, str])
+def test_make_parser_for_type(typ: type) -> None:
+    """Test make_parser on Type[...]."""
+    assert make_parser(t.Type[typ]) == make_parser(typ)
+
+
 class TestFixedLengthTuple:
     """Test make_parser(tuple[int, float])."""
     @given(
@@ -412,7 +419,6 @@ class TestUnsupported:
             dict[str, str, str],  # type: ignore
             list[()],  # type: ignore
             list[int, float],  # type: ignore
-            list[t.Literal[0]],
             tuple[(), ()],  # type: ignore
             tuple[()],  # type: ignore
             tuple[...],  # type: ignore
@@ -434,7 +440,6 @@ class TestUnsupported:
             ...,
             t.Any,
             t.Callable[[int], int],
-            t.Literal[0],
             t.Tuple[()],
         ]
         for hint in hints:
@@ -522,3 +527,27 @@ def test_make_parser_for_dict_with_variable_length_key() -> None:
     ]
     for tokens, expected in cases:
         assert parse(collections.deque(tokens)).value == expected
+
+
+class TestLiteral:
+    """Test make_parser on t.Literal[...]."""
+    @pytest.mark.parametrize("integer", list(range(10)))
+    def test_parser_on_valid_int_literals(self, integer: int) -> None:
+        parser = make_parser(t.Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        result = parser(collections.deque([str(integer)]))
+        assert result.value == integer
+
+    @given(st.integers().filter(lambda x: x < 0 or x > 9))
+    def test_parser_on_invalid_int_literals(self, integer: int) -> None:
+        parser = make_parser(t.Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        with pytest.raises(CantParse):
+            parser(collections.deque([str(integer)]))
+
+
+@given(st.one_of(st.integers(), st.text(), st.floats(allow_nan=False)))
+def test_lit_str(value: t.Any) -> None:
+    """str(Parser) should be the same as str(value)."""
+    parser = Lit(value)
+    assert str(parser) == str(value)
+    result = parser(collections.deque([str(value)]))
+    assert result.value == value

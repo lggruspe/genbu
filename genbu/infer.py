@@ -19,28 +19,9 @@ def make_union_parser(*args: t.Any) -> comb.Parser:
     return comb.Or(*map(infer_parser, args))
 
 
-class Lit(comb.Parser):
-    """Literal parser.
-
-    Type of value should implement __str__.
-    """
-    def __init__(self, value: t.Any):
-        self.value = value
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def parse(self, tokens: t.Deque[str]) -> comb.Result:
-        """Parse value."""
-        if not tokens or tokens[0] != str(self.value):
-            raise comb.CantParse(self, tokens)
-        tokens.popleft()
-        return comb.Result(self.value)
-
-
 def make_literal_parser(*args: t.Any) -> comb.Parser:
     """Return parser for t.Literal[args]."""
-    return comb.Or(*map(Lit, args))
+    return comb.Or(*map(comb.Lit, args))
 
 
 def make_list_parser(arg: t.Any) -> comb.Parser:

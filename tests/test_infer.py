@@ -10,7 +10,7 @@ import pytest
 
 from genbu import CantParse
 from genbu.combinators import Parser
-from genbu.infer import Lit, infer_parser
+from genbu.infer import infer_parser
 
 from . import strategies
 
@@ -552,15 +552,6 @@ class TestLiteral:
         parser = infer_parser(literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         with pytest.raises(CantParse):
             parser(collections.deque([str(integer)]))
-
-
-@given(st.one_of(st.integers(), st.text(), st.floats(allow_nan=False)))
-def test_lit_str(value: t.Any) -> None:
-    """str(Parser) should be the same as str(value)."""
-    parser = Lit(value)
-    assert str(parser) == str(value)
-    result = parser(collections.deque([str(value)]))
-    assert result.value == value
 
 
 @given(

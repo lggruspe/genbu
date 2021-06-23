@@ -4,6 +4,7 @@ import collections
 import shlex
 import typing as t
 
+from hypothesis import given, strategies as st
 import pytest
 
 from genbu import combinators as comb
@@ -241,3 +242,12 @@ def test_parser_pretty() -> None:
 
     parser = comb.And(comb.Or(comb.One(float), comb.Emit(False)))
     assert parser.pretty("test: {}, bye.") == "test: [float], bye."
+
+
+@given(st.one_of(st.integers(), st.text(), st.floats(allow_nan=False)))
+def test_lit_str(value: t.Any) -> None:
+    """str(Parser) should be the same as str(value)."""
+    parser = comb.Lit(value)
+    assert str(parser) == str(value)
+    result = parser(collections.deque([str(value)]))
+    assert result.value == value

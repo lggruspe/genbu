@@ -68,6 +68,25 @@ class One(Parser):
             raise CantParse(self, tokens) from exc
 
 
+class Lit(Parser):
+    """Literal parser.
+
+    Type of value should implement __str__.
+    """
+    def __init__(self, value: t.Any):
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def parse(self, tokens: Tokens) -> Result:
+        """Parse value."""
+        if not tokens or tokens[0] != str(self.value):
+            raise CantParse(self, tokens)
+        tokens.popleft()
+        return Result(self.value)
+
+
 class Or(Parser):
     """Union of Parsers."""
     def __init__(self, *parsers: Parser):

@@ -30,13 +30,13 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with pylint
       run: |
-        pylint infer_parser tests
+        pylint genbu tests
     - name: Run mypy
       run: |
-        mypy --strict --no-warn-unused-ignores infer_parser tests
+        mypy --strict --no-warn-unused-ignores genbu tests
     - name: Lint with flake8
       run: |
-        flake8 --count --max-complexity=10 --show-source --statistics infer_parser tests
+        flake8 --count --max-complexity=10 --show-source --statistics genbu tests
     - name: Test with pytest
       run: |
-        pytest --cov=infer_parser --cov=tests --cov-report=term-missing --hypothesis-verbosity=verbose
+        pytest --cov=genbu --cov=tests --cov-report=term-missing --hypothesis-verbosity=verbose

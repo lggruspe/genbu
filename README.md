@@ -7,7 +7,7 @@ genbu
 [![GitHub](https://img.shields.io/github/license/lggruspe/genbu)](./LICENSE)
 
 Genbu is a library for creating command-line interfaces using shell
-parser combinators.
+parser combinators and type hints.
 
 Install
 -------

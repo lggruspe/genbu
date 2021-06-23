@@ -1,4 +1,4 @@
-"""Make shell arguments parsers from type hints."""
+"""Infer parser from type hint."""
 
 import sys
 import typing as t

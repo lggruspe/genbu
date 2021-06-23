@@ -6,7 +6,7 @@ setuptools.setup(
     version="0.1",
     author="Levi Gruspe",
     author_email="mail.levig@gmail.com",
-    description="Make shell argument parsers from type hints",
+    description="Create CLIs using parser combinators and type hints",
     long_description=Path("README.md").read_text(),
     long_description_content_type="text/markdown",
     url="https://github.com/lggruspe/genbu-parser",

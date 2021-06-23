@@ -3,12 +3,12 @@
 import sys
 import typing as t
 
-from genbu import combinators as comb
+from . import combinators as comb
 
 
 def make_optional_parser(arg: t.Any) -> comb.Parser:
     """Return parser for t.Optional[arg]."""
-    return comb.Or(make_parser(arg), make_parser(type(None)))
+    return comb.Or(infer_parser(arg), infer_parser(type(None)))
 
 
 def make_union_parser(*args: t.Any) -> comb.Parser:
@@ -16,7 +16,7 @@ def make_union_parser(*args: t.Any) -> comb.Parser:
     if len(args) == 2 and type(None) in args:
         arg = args[0] if args[0] is not type(None) else args[1]  # noqa:E721
         return make_optional_parser(arg)
-    return comb.Or(*map(make_parser, args))
+    return comb.Or(*map(infer_parser, args))
 
 
 class Lit(comb.Parser):
@@ -45,12 +45,13 @@ def make_literal_parser(*args: t.Any) -> comb.Parser:
 
 def make_list_parser(arg: t.Any) -> comb.Parser:
     """Return parser for list[arg] and t.List[arg]."""
-    return comb.Repeat(make_parser(arg))
+    return comb.Repeat(infer_parser(arg))
 
 
 def make_dict_parser(key: t.Any, val: t.Any) -> comb.Parser:
     """Return parser for dict[key, val] and t.Dict[key, val]."""
-    return comb.Repeat(comb.And(make_parser(key), make_parser(val)), then=dict)
+    return comb.Repeat(comb.And(infer_parser(key), infer_parser(val)),
+                       then=dict)
 
 
 def make_tuple_parser(*args: t.Any) -> comb.Parser:
@@ -58,8 +59,8 @@ def make_tuple_parser(*args: t.Any) -> comb.Parser:
     if args in ((), ((),)):
         return comb.Emit(())
     if len(args) == 2 and args[-1] == ...:
-        return comb.Repeat(make_parser(args[0]), then=tuple)
-    return comb.And(*map(make_parser, args), then=tuple)
+        return comb.Repeat(infer_parser(args[0]), then=tuple)
+    return comb.And(*map(infer_parser, args), then=tuple)
 
 
 def get_origin(hint: t.Any) -> t.Any:
@@ -103,18 +104,18 @@ class ParserMaker:
         self.parser_makers = {
             dict: make_dict_parser,
             list: make_list_parser,
-            t.ClassVar: self.make_parser,
+            t.ClassVar: self.infer_parser,
             t.Dict: make_dict_parser,
             t.List: make_list_parser,
             t.Tuple: make_tuple_parser,
-            t.Type: self.make_parser,
+            t.Type: self.infer_parser,
             t.Union: make_union_parser,
             tuple: make_tuple_parser,
-            type: self.make_parser,
+            type: self.infer_parser,
         }
         if sys.version_info >= (3, 8):
             self.parser_makers.update({
-                t.Final: self.make_parser,  # pylint: disable=no-member
+                t.Final: self.infer_parser,  # pylint: disable=no-member
             })
 
     def cache(self, hint: t.Any, parser: comb.Parser) -> comb.Parser:
@@ -123,10 +124,10 @@ class ParserMaker:
         self.parsers[hint] = parser
         return parser
 
-    def make_parser(self, hint: t.Any) -> comb.Parser:
+    def infer_parser(self, hint: t.Any) -> comb.Parser:
         """Make parser for type hint.
 
-        Caches simple types so that rerunning make_parser will give the same
+        Caches simple types so that rerunning infer_parser will give the same
         result. Don't cache types with parameters, because it doesn't work with
         Union and possibly other types.
         """
@@ -141,7 +142,7 @@ class ParserMaker:
             sys.version_info >= (3, 9)
             and origin is t.Annotated  # pylint: disable=no-member
         ):
-            return self.make_parser(args[0])
+            return self.infer_parser(args[0])
         if (
             sys.version_info >= (3, 8)
             and origin is t.Literal  # pylint: disable=no-member
@@ -155,4 +156,4 @@ class ParserMaker:
         raise UnsupportedType(hint)
 
 
-make_parser = ParserMaker().make_parser
+infer_parser = ParserMaker().infer_parser

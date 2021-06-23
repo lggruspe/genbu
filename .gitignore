@@ -1,5 +1,8 @@
+*.egg-info/
 *.pyc
-/.coverage
+.coverage
+.hypothesis
 __pycache__/
+build/
 dist/
 env/

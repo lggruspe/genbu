@@ -19,5 +19,3 @@ __all__ = [
     "default_error_handler",
     "usage",
 ]
-
-__version__ = "0.1"

@@ -24,17 +24,26 @@ def default_error_handler(cli: "CLInterface", exc: CLError) -> t.NoReturn:
 class CLInterface:  # pylint: disable=R0902,R0913
     """Shell (argv) parser."""
     def __init__(self,
+                 callback: t.Callable[..., t.Any],
                  *,
-                 name: str,
-                 description: str,
+                 name: t.Optional[str] = None,
+                 description: t.Optional[str] = None,
                  params: t.Optional[t.List[Param]] = None,
                  subparsers: t.Optional[t.Sequence["CLInterface"]] = None,
-                 callback: t.Callable[..., t.Any],
                  error_handler: ExceptionHandler = default_error_handler):
+
+        if name is None:
+            name = callback.__name__
+        if description is None:
+            description = callback.__doc__
+
+        assert name is not None
         assert not any(c.isspace() for c in name)
 
         self.name = name
-        self.description = textwrap.dedent(description.strip())
+        self.description = (
+            textwrap.dedent(description.strip()) if description else None
+        )
         self.params = list(params or ())
         self.subparsers = {s.name: s for s in subparsers or []}
         self.callback = callback

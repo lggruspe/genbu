@@ -223,3 +223,14 @@ def test_cli_run_with_subparsers() -> None:
     for source in ["ba", "oof", "-h"]:
         with pytest.raises(SystemExit):
             foo.run(source.split())
+
+
+def test_clinterface_name_and_description_are_optional() -> None:
+    """It should infer name and description from callback instead."""
+    def hello() -> None:
+        """Hello, world!"""
+
+    cli = CLInterface(hello)
+
+    assert cli.name == "hello"
+    assert cli.description == "Hello, world!"

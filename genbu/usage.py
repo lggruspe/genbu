@@ -108,7 +108,7 @@ def usage(parser: CLInterface,
           ) -> str:
     """Construct usage string."""
     if header is None:
-        header = parser.description
+        header = parser.description or ""
 
     result = render_example(parser)
     result += f"\n\n{textwrap.dedent(header.strip())}\n\n"

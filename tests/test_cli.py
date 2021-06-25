@@ -28,9 +28,9 @@ def test_cli_call_with_arguments() -> None:
         params=[Param("numbers", parse=comb.Repeat(comb.One(float)))],
         callback=lambda numbers: sum(numbers)  # pylint: disable=W0108
     )
-    assert cli([]) == 0
-    assert cli(["1.5", "2"]) == 3.5
-    assert cli(["0.45e-5"]) == 0.45e-5
+    assert cli.run([]) == 0
+    assert cli.run(["1.5", "2"]) == 3.5
+    assert cli.run(["0.45e-5"]) == 0.45e-5
 
 
 def test_cli_call_with_short_options() -> None:
@@ -46,7 +46,7 @@ def test_cli_call_with_short_options() -> None:
         ],
         callback=lambda x: x,
     )
-    assert cli("-a4 -b 5 -c=6".split()) == 15
+    assert cli.run("-a4 -b 5 -c=6".split()) == 15
 
 
 def test_cli_call_with_stacked_options() -> None:
@@ -72,7 +72,7 @@ def test_cli_call_with_stacked_options() -> None:
         ("-cba", "abc"),
     ]
     for source, expected in cases:
-        assert cli(source.split()) == expected
+        assert cli.run(source.split()) == expected
 
 
 def test_cli_call_with_long_options() -> None:
@@ -88,7 +88,7 @@ def test_cli_call_with_long_options() -> None:
         ],
         callback=lambda x: x,
     )
-    assert cli("--foo 1 --bar 2 --baz 3".split()) == 6
+    assert cli.run("--foo 1 --bar 2 --baz 3".split()) == 6
 
 
 def test_cli_call_with_long_options_with_equals() -> None:
@@ -100,7 +100,7 @@ def test_cli_call_with_long_options_with_equals() -> None:
 
     cases = [("--value=5", 5), ("--valu=6", 6), ("--val=7", 7)]
     for source, expected in cases:
-        assert cli(source.split()) == expected
+        assert cli.run(source.split()) == expected
 
 
 @pytest.mark.parametrize("source", ["1", "-i", "-invalid", "--invalid"])
@@ -108,9 +108,9 @@ def test_cli_call_with_unknown_options(source: str) -> None:
     """Program should abort if user enters unexpected option."""
     cli = make_cli()
     with pytest.raises(SystemExit):
-        cli(source.split())
+        cli.run(source.split())
     with pytest.raises(SystemExit):
-        cli((source + "=foo").split())
+        cli.run((source + "=foo").split())
 
 
 def test_cli_call_with_ambiguous_long_options() -> None:
@@ -122,9 +122,9 @@ def test_cli_call_with_ambiguous_long_options() -> None:
 
     for source in ["--b", "--ba"]:
         with pytest.raises(SystemExit):
-            cli(source.split())
-    cli(["--bar"])
-    cli(["--baz"])
+            cli.run(source.split())
+    cli.run(["--bar"])
+    cli.run(["--baz"])
 
 
 def test_cli_call_with_missing_options() -> None:
@@ -143,8 +143,8 @@ def test_cli_call_with_missing_options() -> None:
             "1 -b 2",
     ]:
         with pytest.raises(SystemExit):
-            cli(source.split())
-    assert cli("1 -b 2 --c 3".split()) == (1, 2, 3)
+            cli.run(source.split())
+    assert cli.run("1 -b 2 --c 3".split()) == (1, 2, 3)
 
 
 def test_cli_call_with_various_parameter_kinds_in_callback() -> None:
@@ -172,8 +172,8 @@ def test_cli_call_with_various_parameter_kinds_in_callback() -> None:
         callback=callback,
     )
 
-    assert cli("-a 1 -b 2 -c 3 -d k 4".split()) == (1, (2,), 3, {"k": 4})
-    assert cli("-a 1 -c 2".split()) == (1, (), 2, {})
+    assert cli.run("-a 1 -b 2 -c 3 -d k 4".split()) == (1, (2,), 3, {"k": 4})
+    assert cli.run("-a 1 -c 2".split()) == (1, (), 2, {})
 
 
 def test_cli_call_with_subparsers() -> None:
@@ -197,10 +197,10 @@ def test_cli_call_with_subparsers() -> None:
         subparsers=[bar, baz],
     )
 
-    assert foo([]) == "foo"
-    assert foo(["bar"]) == "bar"
-    assert foo(["baz"]) == "baz"
+    assert foo.run([]) == "foo"
+    assert foo.run(["bar"]) == "bar"
+    assert foo.run(["baz"]) == "baz"
 
     for source in ["ba", "oof", "-h"]:
         with pytest.raises(SystemExit):
-            foo(source.split())
+            foo.run(source.split())

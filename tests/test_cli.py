@@ -1,8 +1,10 @@
 # pylint: disable=disallowed-name,invalid-name,redefined-outer-name
 """Test genbu.cli."""
 
+import sys
 import typing as t
 
+from hypothesis import given, strategies as st
 import pytest
 
 from genbu import CLInterface, Param, combinators as comb
@@ -22,7 +24,24 @@ def make_cli(**kwargs: t.Any) -> CLInterface:
 CLIFactory = t.Callable[[], CLInterface]
 
 
-def test_cli_call_with_arguments() -> None:
+@given(
+    st.lists(
+        st.text().filter(lambda x: not x.strip().startswith("-")),
+        min_size=1,
+    ),
+)
+def test_cli_run_without_arguments(argv: t.List[str]) -> None:
+    """It should use sys.argv[1:]."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sys, "argv", argv)
+        cli = make_cli(
+            params=[Param("arg", parse=comb.Repeat(comb.One(str), then=list))],
+            callback=lambda arg: arg,
+        )
+        assert cli.run() == argv[1:]
+
+
+def test_cli_run_with_arguments() -> None:
     """Test with positional arguments."""
     cli = make_cli(
         params=[Param("numbers", parse=comb.Repeat(comb.One(float)))],
@@ -33,7 +52,7 @@ def test_cli_call_with_arguments() -> None:
     assert cli.run(["0.45e-5"]) == 0.45e-5
 
 
-def test_cli_call_with_short_options() -> None:
+def test_cli_run_with_short_options() -> None:
     """Test with short options."""
     cli = make_cli(
         params=[
@@ -49,7 +68,7 @@ def test_cli_call_with_short_options() -> None:
     assert cli.run("-a4 -b 5 -c=6".split()) == 15
 
 
-def test_cli_call_with_stacked_options() -> None:
+def test_cli_run_with_stacked_options() -> None:
     """Test with stacked short options."""
     def callback(a: str = "", b: str = "", c: str = "") -> str:
         return a + b + c
@@ -75,7 +94,7 @@ def test_cli_call_with_stacked_options() -> None:
         assert cli.run(source.split()) == expected
 
 
-def test_cli_call_with_long_options() -> None:
+def test_cli_run_with_long_options() -> None:
     """Test with long options."""
     cli = make_cli(
         params=[
@@ -91,7 +110,7 @@ def test_cli_call_with_long_options() -> None:
     assert cli.run("--foo 1 --bar 2 --baz 3".split()) == 6
 
 
-def test_cli_call_with_long_options_with_equals() -> None:
+def test_cli_run_with_long_options_with_equals() -> None:
     """Test with long options with equals (e.g. --foo=bar)."""
     cli = make_cli(
         params=[Param("value", ["--value"], parse=comb.One(int))],
@@ -104,7 +123,7 @@ def test_cli_call_with_long_options_with_equals() -> None:
 
 
 @pytest.mark.parametrize("source", ["1", "-i", "-invalid", "--invalid"])
-def test_cli_call_with_unknown_options(source: str) -> None:
+def test_cli_run_with_unknown_options(source: str) -> None:
     """Program should abort if user enters unexpected option."""
     cli = make_cli()
     with pytest.raises(SystemExit):
@@ -113,7 +132,7 @@ def test_cli_call_with_unknown_options(source: str) -> None:
         cli.run((source + "=foo").split())
 
 
-def test_cli_call_with_ambiguous_long_options() -> None:
+def test_cli_run_with_ambiguous_long_options() -> None:
     """Program should abort if long option prefix is ambiguous."""
     cli = make_cli(params=[
         Param("bar", ["--bar"], parse=comb.Emit(True)),
@@ -127,7 +146,7 @@ def test_cli_call_with_ambiguous_long_options() -> None:
     cli.run(["--baz"])
 
 
-def test_cli_call_with_missing_options() -> None:
+def test_cli_run_with_missing_options() -> None:
     """Program should abort if there are missing arguments."""
     cli = make_cli(
         params=[
@@ -147,7 +166,7 @@ def test_cli_call_with_missing_options() -> None:
     assert cli.run("1 -b 2 --c 3".split()) == (1, 2, 3)
 
 
-def test_cli_call_with_various_parameter_kinds_in_callback() -> None:
+def test_cli_run_with_various_parameter_kinds_in_callback() -> None:
     """CLI arguments should properly be bound to callback params.
 
     Tested parameter kinds:
@@ -176,7 +195,7 @@ def test_cli_call_with_various_parameter_kinds_in_callback() -> None:
     assert cli.run("-a 1 -c 2".split()) == (1, (), 2, {})
 
 
-def test_cli_call_with_subparsers() -> None:
+def test_cli_run_with_subparsers() -> None:
     """Test with subparsers."""
     bar = CLInterface(
         name="bar",

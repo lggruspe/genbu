@@ -117,8 +117,10 @@ class CLInterface:  # pylint: disable=R0902,R0913
             subparser = route[-1] if route else self
             subparser.error_handler(subparser, exc)
 
-    def run(self, argv: t.Iterable[str]) -> t.Any:
+    def run(self, argv: t.Optional[t.Iterable[str]] = None) -> t.Any:
         """Parse argv and run callback."""
+        if argv is None:
+            argv = sys.argv[1:]
         namespace = self.parse(argv)
         return namespace.bind(namespace.cli.callback)
 

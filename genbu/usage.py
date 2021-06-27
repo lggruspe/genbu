@@ -47,8 +47,8 @@ def render_option(param: Param) -> t.Optional[str]:
         sorted(param.optargs, key=lambda s: (s.startswith("--"), s))
     )
 
-    arg: t.Optional[str] = param.parse.pretty()
-    if isinstance(param.parse, comb.Emit) or arg in ("", "<''>"):
+    arg: t.Optional[str] = param.parser.pretty()
+    if isinstance(param.parser, comb.Emit) or arg in ("", "<''>"):
         arg = None
     if param.arg_description is not None:
         arg = param.arg_description
@@ -74,7 +74,7 @@ def options_block(*params: Param) -> str:
 def usage_example(parser: CLInterface) -> str:
     """Return usage example for CLInterface."""
     args = [
-        f"<{p.name}:{p.parse!s}>" for p in parser.params if not p.is_option()
+        f"<{p.name}:{p.parser!s}>" for p in parser.params if not p.is_option()
     ]
     prefix = "[options] " if parser.options else ""
     return (prefix + " ".join(args)).strip()

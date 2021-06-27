@@ -26,7 +26,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
     def __init__(self,
                  name: str,
                  optargs: t.Optional[t.List[str]] = None,
-                 parse: comb.Parser = comb.One(str),
+                 parser: comb.Parser = comb.One(str),
                  aggregator: Aggregator = default_aggregator,
                  description: t.Optional[str] = None,
                  arg_description: t.Optional[str] = None):
@@ -41,7 +41,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
 
         self.name = name
         self.optargs = optargs
-        self.parse = parse
+        self.parser = parser
         self.aggregator = aggregator
         self.description = description
         self.arg_description = arg_description

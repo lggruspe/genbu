@@ -17,7 +17,7 @@ def test_usage_with_params() -> None:
         description="Test CLInterface.",
         callback=callback,
         params=[
-            Param("foo", parse=comb.One(str)),
+            Param("foo", parser=comb.One(str)),
             Param("aaa", ["-a", "--aaa"], comb.One(str),
                   description="Set aaa."),
             Param("ahh", ["--ahh"], comb.One(str),
@@ -100,7 +100,7 @@ def test_usage_with_multiple_examples() -> None:
         name="foo",
         description="Foo command.",
         params=[
-            Param("help_", ["-?", "-h"], parse=comb.Emit(True)),
+            Param("help_", ["-?", "-h"], parser=comb.Emit(True)),
         ],
         callback=callback,
         subparsers=[bar],
@@ -115,11 +115,11 @@ def test_usage_with_custom_arg_descriptions() -> None:
         name="test-cli",
         description="Test CLInterface",
         params=[
-            Param("default", ["-a"], parse=comb.Repeat(comb.One(int))),
+            Param("default", ["-a"], parser=comb.Repeat(comb.One(int))),
             Param(
                 "custom",
                 ["-b"],
-                parse=comb.Repeat(comb.One(int)),
+                parser=comb.Repeat(comb.One(int)),
                 arg_description="custom-arg-description",
             )
         ],

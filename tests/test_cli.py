@@ -35,7 +35,9 @@ def test_cli_run_without_arguments(argv: t.List[str]) -> None:
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sys, "argv", argv)
         cli = make_cli(
-            params=[Param("arg", parse=comb.Repeat(comb.One(str), then=list))],
+            params=[
+                Param("arg", parser=comb.Repeat(comb.One(str), then=list)),
+            ],
             callback=lambda arg: arg,
         )
         assert cli.run() == argv[1:]
@@ -44,7 +46,7 @@ def test_cli_run_without_arguments(argv: t.List[str]) -> None:
 def test_cli_run_with_arguments() -> None:
     """Test with positional arguments."""
     cli = make_cli(
-        params=[Param("numbers", parse=comb.Repeat(comb.One(float)))],
+        params=[Param("numbers", parser=comb.Repeat(comb.One(float)))],
         callback=lambda numbers: sum(numbers)  # pylint: disable=W0108
     )
     assert cli.run([]) == 0
@@ -59,7 +61,7 @@ def test_cli_run_with_short_options() -> None:
             Param(
                 "x",
                 ["-a", "-b", "-c"],
-                parse=comb.One(int),
+                parser=comb.One(int),
                 aggregator=sum,
             ),
         ],
@@ -75,9 +77,9 @@ def test_cli_run_with_stacked_options() -> None:
 
     cli = make_cli(
         params=[
-            Param("a", ["-a"], parse=comb.Emit("a")),
-            Param("b", ["-b"], parse=comb.Emit("b")),
-            Param("c", ["-c"], parse=comb.Emit("c")),
+            Param("a", ["-a"], parser=comb.Emit("a")),
+            Param("b", ["-b"], parser=comb.Emit("b")),
+            Param("c", ["-c"], parser=comb.Emit("c")),
         ],
         callback=callback,
     )
@@ -101,7 +103,7 @@ def test_cli_run_with_long_options() -> None:
             Param(
                 "x",
                 ["--foo", "--bar", "--baz"],
-                parse=comb.One(float),
+                parser=comb.One(float),
                 aggregator=sum,
             ),
         ],
@@ -113,7 +115,7 @@ def test_cli_run_with_long_options() -> None:
 def test_cli_run_with_long_options_with_equals() -> None:
     """Test with long options with equals (e.g. --foo=bar)."""
     cli = make_cli(
-        params=[Param("value", ["--value"], parse=comb.One(int))],
+        params=[Param("value", ["--value"], parser=comb.One(int))],
         callback=lambda value: value,
     )
 
@@ -135,8 +137,8 @@ def test_cli_run_with_unknown_options(source: str) -> None:
 def test_cli_run_with_ambiguous_long_options() -> None:
     """Program should abort if long option prefix is ambiguous."""
     cli = make_cli(params=[
-        Param("bar", ["--bar"], parse=comb.Emit(True)),
-        Param("baz", ["--baz"], parse=comb.Emit(True)),
+        Param("bar", ["--bar"], parser=comb.Emit(True)),
+        Param("baz", ["--baz"], parser=comb.Emit(True)),
     ])
 
     for source in ["--b", "--ba"]:
@@ -150,9 +152,9 @@ def test_cli_run_with_missing_options() -> None:
     """Program should abort if there are missing arguments."""
     cli = make_cli(
         params=[
-            Param("a", parse=comb.One(int)),
-            Param("b", ["-b"], parse=comb.One(int)),
-            Param("c", ["--c"], parse=comb.One(int)),
+            Param("a", parser=comb.One(int)),
+            Param("b", ["-b"], parser=comb.One(int)),
+            Param("c", ["--c"], parser=comb.One(int)),
         ],
         callback=lambda a, b, c: (a, b, c),
     )
@@ -180,10 +182,10 @@ def test_cli_run_with_various_parameter_kinds_in_callback() -> None:
 
     cli = make_cli(
         params=[
-            Param("a", ["-a"], parse=comb.One(int)),
-            Param("b", ["-b"], parse=comb.Repeat(comb.One(int))),
-            Param("c", ["-c"], parse=comb.One(int)),
-            Param("d", ["-d"], parse=comb.Repeat(
+            Param("a", ["-a"], parser=comb.One(int)),
+            Param("b", ["-b"], parser=comb.Repeat(comb.One(int))),
+            Param("c", ["-c"], parser=comb.One(int)),
+            Param("d", ["-d"], parser=comb.Repeat(
                 comb.And(comb.One(str), comb.One(int)),
                 then=dict,
             )),

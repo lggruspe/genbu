@@ -80,10 +80,8 @@ class CLInterface:  # pylint: disable=R0902,R0913
 
         assert param is not None
 
-        parse = param.parse
-
         deque = collections.deque(args)
-        value = parse(deque).value
+        value = param.parser(deque).value
         return param, value, list(deque)
 
     def takes_params(self) -> bool:
@@ -156,7 +154,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         deque = collections.deque(args)
         for param in subparser.arguments.values():
             values = optargs.get(param, [])
-            values.append(param.parse(deque).value)
+            values.append(param.parser(deque).value)
             optargs[param] = values
 
         if deque:

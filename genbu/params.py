@@ -13,12 +13,12 @@ class InvalidOption(ValueError):
         self.option = option
 
 
-Resolver = t.Callable[[t.Any, t.Any], t.Any]
+Aggregator = t.Callable[[t.Sequence[t.Any]], t.Any]
 
 
-def default_resolver(_: t.Any, other: t.Any) -> t.Any:
-    """Replace original value with new value."""
-    return other
+def default_aggregator(values: t.Sequence[t.Any]) -> t.Any:
+    """Return last element of values."""
+    return values[-1]
 
 
 class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
@@ -27,7 +27,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
                  name: str,
                  optargs: t.Optional[t.List[str]] = None,
                  parse: comb.Parser = comb.One(str),
-                 resolve: Resolver = default_resolver,
+                 aggregator: Aggregator = default_aggregator,
                  description: t.Optional[str] = None,
                  arg_description: t.Optional[str] = None):
         if optargs is None:
@@ -42,7 +42,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
         self.name = name
         self.optargs = optargs
         self.parse = parse
-        self.resolve = resolve
+        self.aggregator = aggregator
         self.description = description
         self.arg_description = arg_description
 

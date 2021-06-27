@@ -9,23 +9,19 @@ def hello(*names: str, greeting: str = "Hello") -> str:
     return "{}, {}!".format(greeting, ", ".join(names))
 
 
-def main(*names: str, greeting: str = "Hello", help_: bool = False) -> str:
-    """Entrypoint to hello."""
-    if help_:
-        sys.exit(usage(cli))
-    return hello(*names, greeting=greeting)
-
-
 cli = CLInterface(
-    name=hello.__name__,
-    description=hello.__doc__,
+    hello,
     params=[
-        Param("greeting", ["-g", "--greeting"], comb.One(str), lambda _, b: b),
+        Param("greeting", ["-g", "--greeting"], comb.One(str)),
         Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
-        Param("help_", ["-?", "-h", "--help"], comb.Emit(True)),
+        Param(
+            "help_",
+            ["-?", "-h", "--help"],
+            comb.Emit(True),
+            aggregator=lambda _: sys.exit(usage(cli))
+        ),
     ],
-    callback=main,
 )
 
 if __name__ == "__main__":
-    print(cli(sys.argv[1:]))
+    print(cli.run())

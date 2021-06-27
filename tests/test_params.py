@@ -1,9 +1,13 @@
 """Test genbu.params."""
 
+import decimal
 import typing as t
+
+from hypothesis import given, strategies as st
 import pytest
+
 from genbu import Param, InvalidOption
-from genbu.params import default_resolver
+from genbu.params import default_aggregator
 
 
 @pytest.mark.parametrize("name,optargs", [
@@ -17,11 +21,14 @@ def test_param_with_invalid_option(name: str, optargs: t.List[str]) -> None:
     assert Param(name=name)
 
 
-@pytest.mark.parametrize("first,second", [
-    ("a", "b"),
-    (1, 2),
-    (["1"], {"2"}),
-])
-def test_default_resolver(first: t.Any, second: t.Any) -> None:
-    """default_resolver should return second argument."""
-    assert default_resolver(first, second) == second
+@given(
+    st.lists(
+        st.from_type(object).filter(
+            lambda x: type(x) not in (complex, float, decimal.Decimal),
+        ),
+        min_size=1,
+    ),
+)
+def test_default_aggregator(lst: t.List[t.Any]) -> None:
+    """default_aggregator should return last element."""
+    assert default_aggregator(lst) == lst[-1]

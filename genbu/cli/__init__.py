@@ -9,7 +9,6 @@ import typing as t
 from ..exceptions import CLError
 from ..params import Param
 from .normalize import UnknownOption, normalize
-from .renamer import Renamer
 
 
 ExceptionHandler = t.Callable[["CLInterface", CLError], t.NoReturn]
@@ -72,10 +71,10 @@ class CLInterface:  # pylint: disable=R0902,R0913
     def parse_opt(self,
                   name: str,
                   args: t.Sequence[str],
-                  ) -> t.Tuple[str, t.Any, t.List[str]]:
+                  ) -> t.Tuple[Param, t.Any, t.List[str]]:
         """Parse option.
 
-        Return expanded option name, parsed value and unparsed tokens."""
+        Return expanded Param, parsed value and unparsed tokens."""
         assert name.startswith("-")
         param = self.options.get(name)
 
@@ -85,7 +84,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
 
         deque = collections.deque(args)
         value = parse(deque).value
-        return (name, value, list(deque))
+        return param, value, list(deque)
 
     def takes_params(self) -> bool:
         """Check if CLInterface can directly take Params."""
@@ -144,23 +143,28 @@ class CLInterface:  # pylint: disable=R0902,R0913
         normalized = normalize(subparser.params, argv)
         args = normalized.arguments
         opts = normalized.options
-        optargs = []
+        optargs: t.Dict[Param, t.List[t.Any]] = {}
 
         for opt in opts:
-            name, value, unused = subparser.parse_opt(opt[0], opt[1:])
-            optargs.append((name, value))
+            param, value, unused = subparser.parse_opt(opt[0], opt[1:])
+
+            values = optargs.get(param, [])
+            values.append(value)
+            optargs[param] = values
             args.extend(unused)
 
         deque = collections.deque(args)
-        for name, param in subparser.arguments.items():
-            optargs.append((name, param.parse(deque).value))
+        for param in subparser.arguments.values():
+            values = optargs.get(param, [])
+            values.append(param.parse(deque).value)
+            optargs[param] = values
 
         if deque:
             raise UnknownOption(deque[0])
 
-        renamed = Renamer(subparser.params or ())(optargs)
-        _ = to_args_kwargs(renamed, subparser.callback)  # Check arguments
-        return renamed
+        aggregated = {p.name: p.aggregator(v) for p, v in optargs.items()}
+        _ = to_args_kwargs(aggregated, subparser.callback)  # Check arguments
+        return aggregated
 
 
 class Namespace:  # pylint: disable=too-few-public-methods

@@ -1,6 +1,7 @@
 """Test arg parser combinators."""
 
 import collections
+import math
 import shlex
 import typing as t
 
@@ -251,3 +252,10 @@ def test_lit_str(value: t.Any) -> None:
     assert str(parser) == str(value)
     result = parser(collections.deque([str(value)]))
     assert result.value == value
+
+
+def test_nan() -> None:
+    """One(float) should parse nan."""
+    parser = comb.One(float)
+    result = parser(collections.deque(["nan"]))
+    assert math.isnan(result.value)

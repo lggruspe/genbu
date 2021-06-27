@@ -1,5 +1,5 @@
 import sys
-from genbu import CLInterface, Param, combinators as comb, usage
+from genbu import CLInterface, Param, combinators as comb, infer_parser, usage
 
 
 def hello(*names: str, greeting: str = "Hello") -> str:
@@ -13,7 +13,7 @@ cli = CLInterface(
     hello,
     params=[
         Param("greeting", ["-g", "--greeting"], comb.One(str)),
-        Param("names", parse=comb.Repeat(comb.One(str), then=tuple)),
+        Param("names", parser=infer_parser(tuple[str, ...])),
         Param(
             "help_",
             ["-?", "-h", "--help"],

@@ -1,5 +1,5 @@
 import sys
-from genbu import CLError, CLInterface, Param, combinators as comb, usage
+from genbu import CLInterface, Param, combinators as comb, usage
 from examples import cat, hello
 
 
@@ -13,23 +13,25 @@ def show_usage(cli: CLInterface, error: bool = False):
     sys.exit(0)
 
 
-def error_handler(cli: CLInterface, exc: CLError):
-    show_usage(cli, error=True)
-
-
 cli = CLInterface(
     name=sys.argv[0],
     description="router example",
     params=[
-        Param("help", ["-h", "--help"], comb.Emit(True), lambda _, b: b)
+        Param(
+            "help",
+            ["-h", "--help"],
+            parser=comb.Emit(True),
+            aggregator=lambda _: show_usage(cli),
+        ),
     ],
     subparsers=[cat.cli, hello.cli],
     callback=lambda: show_usage(cli),
-    error_handler=error_handler,
+    error_handler=lambda cli, exc: show_usage(cli, error=True),
 )
 
 
-try:
-    print(cli(sys.argv[1:]))
-except Exception as exc:
-    print("something went wrong:", exc)
+if __name__ == "__main__":
+    try:
+        print(cli.run())
+    except Exception as exc:
+        print("something went wrong:", exc)

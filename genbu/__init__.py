@@ -4,6 +4,7 @@ from .cli import CLInterface, MissingArgument, default_error_handler
 from .cli.normalize import AmbiguousOption, UnknownOption
 from .combinators import CantParse
 from .exceptions import CLError
+from .infer import infer_parser
 from .params import InvalidOption, Param
 from .usage import usage
 
@@ -17,5 +18,6 @@ __all__ = [
     "Param",
     "UnknownOption",
     "default_error_handler",
+    "infer_parser",
     "usage",
 ]

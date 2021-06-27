@@ -160,7 +160,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         if deque:
             raise UnknownOption(deque[0])
 
-        aggregated = {p.name: p.aggregator(v) for p, v in optargs.items()}
+        aggregated = {p.dest: p.aggregator(v) for p, v in optargs.items()}
         _ = to_args_kwargs(aggregated, subparser.callback)  # Check arguments
         return aggregated
 

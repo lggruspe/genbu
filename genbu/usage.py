@@ -74,7 +74,7 @@ def options_block(*params: Param) -> str:
 def usage_example(parser: CLInterface) -> str:
     """Return usage example for CLInterface."""
     args = [
-        f"<{p.name}:{p.parser!s}>" for p in parser.params if not p.is_option()
+        f"<{p.dest}:{p.parser!s}>" for p in parser.params if not p.is_option()
     ]
     prefix = "[options] " if parser.options else ""
     return (prefix + " ".join(args)).strip()

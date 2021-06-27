@@ -24,14 +24,14 @@ def default_aggregator(values: t.Sequence[t.Any]) -> t.Any:
 class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
     """CLI parameter descriptor."""
     def __init__(self,
-                 name: str,
+                 dest: str,
                  optargs: t.Optional[t.List[str]] = None,
                  parser: comb.Parser = comb.One(str),
                  aggregator: Aggregator = default_aggregator,
                  description: t.Optional[str] = None,
                  arg_description: t.Optional[str] = None):
         if optargs is None:
-            optargs = [name]
+            optargs = [dest]
         if description is not None:
             description = textwrap.dedent(description.strip())
 
@@ -39,7 +39,7 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
             if "=" in optarg or any(c.isspace() for c in optarg):
                 raise InvalidOption(optarg)
 
-        self.name = name
+        self.dest = dest
         self.optargs = optargs
         self.parser = parser
         self.aggregator = aggregator

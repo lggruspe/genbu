@@ -10,15 +10,15 @@ from genbu import Param, InvalidOption
 from genbu.params import default_aggregator
 
 
-@pytest.mark.parametrize("name,optargs", [
+@pytest.mark.parametrize("dest,optargs", [
     ("foo", ["--foo=bar"]),
     ("bar", ["--bar baz"]),
 ])
-def test_param_with_invalid_option(name: str, optargs: t.List[str]) -> None:
-    """Param should raise InvalidOption if option name has = or whitespace."""
+def test_param_with_invalid_option(dest: str, optargs: t.List[str]) -> None:
+    """Param should raise InvalidOption if option dest has = or whitespace."""
     with pytest.raises(InvalidOption):
-        Param(name=name, optargs=optargs)
-    assert Param(name=name)
+        Param(dest=dest, optargs=optargs)
+    assert Param(dest=dest)
 
 
 @given(

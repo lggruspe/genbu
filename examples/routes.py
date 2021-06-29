@@ -1,6 +1,6 @@
 import sys
 from genbu import CLInterface, Param, combinators as comb, usage
-from examples import cat, hello
+from examples import add, cat, echo, hello
 
 
 def show_usage(cli: CLInterface, error: bool = False):
@@ -24,7 +24,7 @@ cli = CLInterface(
             aggregator=lambda _: show_usage(cli),
         ),
     ],
-    subparsers=[cat.cli, hello.cli],
+    subparsers=[add.cli, cat.cli, echo.cli, hello.cli],
     callback=lambda: show_usage(cli),
     error_handler=lambda cli, exc: show_usage(cli, error=True),
 )

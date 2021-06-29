@@ -513,7 +513,9 @@ class TestOptionalSequence:
 
     @given(
         strategies.t_sequences(int).map(lambda s: infer_parser(t.Optional[s])),
-        st.lists(st.text()).filter(lambda x: not x or not x[0].isdecimal()),
+        st.lists(st.text()).filter(
+            lambda x: not x or not x[0].strip().isdecimal(),
+        ),
     )
     def test_parser_emits_empty_sequence_instead_of_none(self,
                                                          parser: Parser,

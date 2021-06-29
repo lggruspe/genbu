@@ -1,5 +1,4 @@
-from genbu import CLInterface
-from genbu.infer_params import infer_params_from_signature as infer
+from genbu import Genbu
 
 
 def echo(*args: str) -> str:
@@ -9,7 +8,7 @@ def echo(*args: str) -> str:
     return " ".join(args)
 
 
-cli = CLInterface(echo, params=infer(echo))
+cli = Genbu(echo)
 
 if __name__ == "__main__":
     print(cli.run())

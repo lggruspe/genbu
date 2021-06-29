@@ -2,7 +2,7 @@
 
 import sys
 
-from genbu import CLInterface, Param, combinators as comb, usage
+from genbu import Genbu, Param, combinators as comb, usage
 
 
 def add(*args: float) -> float:
@@ -10,7 +10,7 @@ def add(*args: float) -> float:
     return sum(args)
 
 
-cli = CLInterface(
+cli = Genbu(
     add,
     params=[
         Param("args", parser=comb.Repeat(comb.One(float))),

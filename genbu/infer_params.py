@@ -1,4 +1,4 @@
-"""Infer CLInterface Params from function signature."""
+"""Infer Genbu Params from function signature."""
 
 import inspect
 import typing as t
@@ -26,7 +26,7 @@ def infer_parser_from_parameter(parameter: inspect.Parameter) -> comb.Parser:
 
 def infer_params_from_signature(function: t.Callable[..., t.Any],
                                 ) -> t.List[Param]:
-    """Infer CLInterface Params from function signature.
+    """Infer Genbu Params from function signature.
 
     Creates named options by default.
     Throws UnsupportedType.

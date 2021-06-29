@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 
-from genbu import CLInterface, Param, combinators as comb, usage
+from genbu import Genbu, Param, combinators as comb, usage
 
 
 def cat(path: Path) -> str:
@@ -9,7 +9,7 @@ def cat(path: Path) -> str:
     return path.read_text()
 
 
-cli = CLInterface(
+cli = Genbu(
     cat,
     params=[
         Param("path", ["-p", "--path"], comb.One(Path)),

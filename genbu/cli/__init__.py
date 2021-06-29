@@ -12,10 +12,10 @@ from ..params import Param
 from .normalize import UnknownOption, normalize
 
 
-ExceptionHandler = t.Callable[["CLInterface", CLError], t.NoReturn]
+ExceptionHandler = t.Callable[["Genbu", CLError], t.NoReturn]
 
 
-def default_error_handler(cli: "CLInterface", exc: CLError) -> t.NoReturn:
+def default_error_handler(cli: "Genbu", exc: CLError) -> t.NoReturn:
     """Default exception handler."""
     name = " ".join(cli.complete_name())
     sys.exit(f"{name}: {exc}")
@@ -33,7 +33,7 @@ def unique(items: t.Iterable[t.Any]) -> t.List[t.Any]:
     return list(result.values())
 
 
-class CLInterface:  # pylint: disable=R0902,R0913
+class Genbu:  # pylint: disable=R0902,R0913
     """Shell (argv) parser."""
     def __init__(self,
                  callback: t.Callable[..., t.Any],
@@ -41,7 +41,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
                  name: t.Optional[str] = None,
                  description: t.Optional[str] = None,
                  params: t.Optional[t.List[Param]] = None,
-                 subparsers: t.Optional[t.Sequence["CLInterface"]] = None,
+                 subparsers: t.Optional[t.Sequence["Genbu"]] = None,
                  error_handler: ExceptionHandler = default_error_handler):
 
         if name is None:
@@ -100,11 +100,11 @@ class CLInterface:  # pylint: disable=R0902,R0913
         return param, value, list(deque)
 
     def takes_params(self) -> bool:
-        """Check if CLInterface can directly take Params."""
+        """Check if Genbu can directly take Params."""
         return bool(self.params)
 
     def has_subcommands(self) -> bool:
-        """Check if CLInterface has named subcommands."""
+        """Check if Genbu has named subcommands."""
         return bool(self.subparsers)
 
     def parse(self, argv: t.Iterable[str]) -> "Namespace":
@@ -118,7 +118,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         Note: parsers may throw CantParse.
         Long option expansion may raise UnknownOption.
         """
-        route: t.List["CLInterface"] = []
+        route: t.List["Genbu"] = []
         deque = collections.deque(argv)
         try:
             while deque:
@@ -146,7 +146,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         return namespace.bind(namespace.cli.callback)
 
     @staticmethod
-    def parse_optargs(subparser: "CLInterface",
+    def parse_optargs(subparser: "Genbu",
                       argv: t.Sequence[str],
                       ) -> t.Dict[str, t.Any]:
         """Parse options and arguments from argv using custom subparser.
@@ -186,7 +186,7 @@ class Namespace:  # pylint: disable=too-few-public-methods
     - mapping from names to values
     - (optional) command prefix from argv
     """
-    def __init__(self, names: t.Dict[str, t.Any], cli: CLInterface):
+    def __init__(self, names: t.Dict[str, t.Any], cli: Genbu):
         self.names = names
         self.cli = cli
 

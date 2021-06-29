@@ -1,4 +1,4 @@
-"""CLInterface paramater descriptor."""
+"""Genbu paramater descriptor."""
 
 import textwrap
 import typing as t

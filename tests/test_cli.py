@@ -7,21 +7,21 @@ import typing as t
 from hypothesis import given, strategies as st
 import pytest
 
-from genbu import CLInterface, Param, combinators as comb
+from genbu import Genbu, Param, combinators as comb
 
 
-def make_cli(**kwargs: t.Any) -> CLInterface:
-    """CLInterface factory."""
+def make_cli(**kwargs: t.Any) -> Genbu:
+    """Genbu factory."""
     def callback() -> None:
         """Does nothing."""
 
     kwargs.setdefault("name", "test-cli")
-    kwargs.setdefault("description", "Test CLInterface.")
+    kwargs.setdefault("description", "Test Genbu.")
     kwargs.setdefault("callback", callback)
-    return CLInterface(**kwargs)
+    return Genbu(**kwargs)
 
 
-CLIFactory = t.Callable[[], CLInterface]
+CLIFactory = t.Callable[[], Genbu]
 
 
 @given(
@@ -199,19 +199,19 @@ def test_cli_run_with_various_parameter_kinds_in_callback() -> None:
 
 def test_cli_run_with_subparsers() -> None:
     """Test with subparsers."""
-    bar = CLInterface(
+    bar = Genbu(
         name="bar",
         description="Bar.",
         callback=lambda: "bar",
     )
 
-    baz = CLInterface(
+    baz = Genbu(
         name="baz",
         description="Baz.",
         callback=lambda: "baz",
     )
 
-    foo = CLInterface(
+    foo = Genbu(
         name="foo",
         description="Foo.",
         callback=lambda: "foo",
@@ -232,7 +232,7 @@ def test_clinterface_name_and_description_are_optional() -> None:
     def hello() -> None:
         """Hello, world!"""
 
-    cli = CLInterface(hello)
+    cli = Genbu(hello)
 
     assert cli.name == "hello"
     assert cli.description == "Hello, world!"
@@ -245,7 +245,7 @@ def test_clinterface_run_with_defaults_in_function_args(default: str) -> None:
         """Return message."""
         return message
 
-    cli = CLInterface(echo)
+    cli = Genbu(echo)
     assert cli.run([]) == default
 
 
@@ -258,17 +258,17 @@ def test_clinterface_params_get_overwritten() -> None:
     foo1 = Param("foo", ["-a"])
     foo2 = Param("foo", ["-b"])
 
-    cli = CLInterface(callback, params=[foo1, foo2])
+    cli = Genbu(callback, params=[foo1, foo2])
     params = cli.params
     assert len(params) == 1
     assert params[0] is foo2
 
 
-class TestCLInterfaceParams:
-    """Test CLInterface.params."""
+class TestGenbuParams:
+    """Test Genbu.params."""
     @pytest.fixture
     def function(self) -> t.Callable[..., t.Any]:
-        """Return CLInterface callback."""
+        """Return Genbu callback."""
         def callback(foo: str, bar: int, baz: float) -> None:  # noqa; # pylint: disable=unused-argument
             """Does nothing."""
         return callback
@@ -277,7 +277,7 @@ class TestCLInterfaceParams:
                                             function: t.Callable[..., t.Any],
                                             ) -> None:
         """Infer params if None."""
-        cli = CLInterface(function)
+        cli = Genbu(function)
         params = cli.params
         assert len(params) == 3
         assert params[0].dest == "foo"
@@ -288,5 +288,5 @@ class TestCLInterfaceParams:
                                          function: t.Callable[..., t.Any],
                                          ) -> None:
         """Don't infer params if params is an empty sequence."""
-        cli = CLInterface(function, params=[])
+        cli = Genbu(function, params=[])
         assert not cli.params

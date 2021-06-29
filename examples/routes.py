@@ -1,9 +1,9 @@
 import sys
-from genbu import CLInterface, Param, combinators as comb, usage
+from genbu import Genbu, Param, combinators as comb, usage
 from examples import add, cat, echo, hello
 
 
-def show_usage(cli: CLInterface, error: bool = False):
+def show_usage(cli: Genbu, error: bool = False):
     name = " ".join(cli.complete_name()) or "cli"
     footer = f"Try '{name} -h' for more information."
     _usage = usage(cli, "Genbu CLI example with subcommands.", footer)
@@ -13,7 +13,7 @@ def show_usage(cli: CLInterface, error: bool = False):
     sys.exit(0)
 
 
-cli = CLInterface(
+cli = Genbu(
     name=sys.argv[0],
     description="router example",
     params=[

@@ -3,7 +3,7 @@
 
 import string
 
-from genbu import CLInterface, Param, combinators as comb, usage
+from genbu import Genbu, Param, combinators as comb, usage
 
 
 def callback() -> None:
@@ -12,9 +12,9 @@ def callback() -> None:
 
 def test_usage_with_params() -> None:
     """usage(...) should contain description of options."""
-    cli = CLInterface(
+    cli = Genbu(
         name="test-cli",
-        description="Test CLInterface.",
+        description="Test Genbu.",
         callback=callback,
         params=[
             Param("foo", parser=comb.One(str)),
@@ -30,7 +30,7 @@ def test_usage_with_params() -> None:
     )
     assert usage(cli) == """usage:  test-cli [options] <foo:str>
 
-Test CLInterface.
+Test Genbu.
 
 options:
     -a, --aaa <str>
@@ -48,17 +48,17 @@ options:
 
 def test_usage_with_subcommands() -> None:
     """usage(...) should contain description of subcommands."""
-    bar = CLInterface(
+    bar = Genbu(
         name="bar",
         description="Bar subcommand",
         callback=callback,
     )
-    baz = CLInterface(
+    baz = Genbu(
         name="baz",
         description="Baz subcommand",
         callback=callback,
     )
-    foo = CLInterface(
+    foo = Genbu(
         name="foo",
         description="Foo command.",
         callback=callback,
@@ -77,9 +77,9 @@ commands:
 
 def test_usage_with_header_and_footer() -> None:
     """usage(...) should contain header and footer."""
-    cli = CLInterface(
+    cli = Genbu(
         name="test-cli",
-        description="Test CLInterface",
+        description="Test Genbu",
         callback=callback,
     )
     assert usage(cli, header="Hello.", footer="Bye.") == """usage:  test-cli
@@ -91,12 +91,12 @@ Bye."""
 
 def test_usage_with_multiple_examples() -> None:
     """usage(...) should have properly indented example lines."""
-    bar = CLInterface(
+    bar = Genbu(
         name="bar",
         description="Bar subcommand",
         callback=callback,
     )
-    foo = CLInterface(
+    foo = Genbu(
         name="foo",
         description="Foo command.",
         params=[
@@ -111,9 +111,9 @@ def test_usage_with_multiple_examples() -> None:
 
 def test_usage_with_custom_arg_descriptions() -> None:
     """usage(...) should use custom description instead of default one."""
-    cli = CLInterface(
+    cli = Genbu(
         name="test-cli",
-        description="Test CLInterface",
+        description="Test Genbu",
         params=[
             Param("default", ["-a"], parser=comb.Repeat(comb.One(int))),
             Param(
@@ -127,7 +127,7 @@ def test_usage_with_custom_arg_descriptions() -> None:
     )
     assert usage(cli) == """usage:  test-cli [options]
 
-Test CLInterface
+Test Genbu
 
 options:
     -a <[int...]>
@@ -136,23 +136,23 @@ options:
 
 def test_usage_with_really_long_list_of_commands() -> None:
     """usage(...) should break line."""
-    def make_subcli(name: str) -> CLInterface:
-        return CLInterface(
+    def make_subcli(name: str) -> Genbu:
+        return Genbu(
             name=name,
             description="Test subcommand",
             callback=callback,
         )
 
-    cli = CLInterface(
+    cli = Genbu(
         name="test-cli",
-        description="Test CLInterface",
+        description="Test Genbu",
         subparsers=[make_subcli(3*a) for a in string.ascii_lowercase],
         callback=callback,
     )
 
     assert usage(cli).startswith("""usage:  test-cli <command> ...
 
-Test CLInterface
+Test Genbu
 
 commands:
     aaa, bbb, ccc, ddd, eee, fff, ggg, hhh, iii, jjj, kkk, lll, mmm,
@@ -163,12 +163,12 @@ commands:
 
 def test_usage_on_subparser() -> None:
     """usage(...) example line should contain subcommand name."""
-    bar = CLInterface(
+    bar = Genbu(
         name="bar",
         description="Bar subcommand",
         callback=callback,
     )
-    CLInterface(
+    Genbu(
         name="foo",
         description="Foo command",
         callback=callback,

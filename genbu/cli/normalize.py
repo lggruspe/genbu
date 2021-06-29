@@ -31,7 +31,7 @@ class AmbiguousOption(UnknownOption):
 
 
 class Argv:
-    """Normalized CLInterface argv."""
+    """Normalized Genbu argv."""
     def __init__(self,
                  options: t.Optional[t.List[t.List[str]]] = None,
                  arguments: t.Optional[t.List[str]] = None):

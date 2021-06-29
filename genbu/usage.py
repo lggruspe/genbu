@@ -5,7 +5,7 @@ import textwrap
 import typing as t
 
 from . import combinators as comb
-from .cli import CLInterface
+from .cli import Genbu
 from .params import Param
 
 
@@ -24,7 +24,7 @@ def wrapped_list(head: str, *items: str) -> str:
     return textwrap.indent("\n".join(lines), "    ")
 
 
-def command_block(group_name: str, parser: CLInterface) -> str:
+def command_block(group_name: str, parser: Genbu) -> str:
     """Construct command block for shell parser subcommands."""
     names = parser.subparsers.keys()
     result = f"{group_name}:\n{wrapped_list(*names)}\n\n"
@@ -71,8 +71,8 @@ def options_block(*params: Param) -> str:
     return result.strip()
 
 
-def usage_example(parser: CLInterface) -> str:
-    """Return usage example for CLInterface."""
+def usage_example(parser: Genbu) -> str:
+    """Return usage example for Genbu."""
     args = [
         f"<{p.dest}:{p.parser!s}>" for p in parser.params if not p.is_option()
     ]
@@ -80,7 +80,7 @@ def usage_example(parser: CLInterface) -> str:
     return (prefix + " ".join(args)).strip()
 
 
-def render_example(parser: CLInterface) -> str:
+def render_example(parser: Genbu) -> str:
     """Render usage examples of CLI with subcommands."""
     examples = []
     if parser.takes_params():
@@ -102,7 +102,7 @@ def render_example(parser: CLInterface) -> str:
     return result.strip()
 
 
-def usage(parser: CLInterface,
+def usage(parser: Genbu,
           header: t.Optional[str] = None,
           footer: t.Optional[str] = None,
           ) -> str:

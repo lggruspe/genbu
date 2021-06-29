@@ -263,3 +263,18 @@ def test_clinterface_run_with_defaults_in_function_args(default: t.Any,
 
     cli = CLInterface(echo)
     assert cli.run([]) == default
+
+
+def test_clinterface_params_get_overwritten() -> None:
+    """If multiple Params have the same dest, the overwrite the existing Param.
+    """
+    def callback() -> None:
+        """Does nothing."""
+
+    foo1 = Param("foo", ["-a"])
+    foo2 = Param("foo", ["-b"])
+
+    cli = CLInterface(callback, params=[foo1, foo2])
+    params = cli.params
+    assert len(params) == 1
+    assert params[0] is foo2

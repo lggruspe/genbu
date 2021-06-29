@@ -21,7 +21,7 @@ def default_aggregator(values: t.Sequence[t.Any]) -> t.Any:
     return values[-1]
 
 
-class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
+class Param:  # pylint: disable=too-many-arguments
     """CLI parameter descriptor."""
     def __init__(self,
                  dest: str,
@@ -45,6 +45,12 @@ class Param:  # pylint: disable=too-few-public-methods,too-many-arguments
         self.aggregator = aggregator
         self.description = description
         self.arg_description = arg_description
+
+    def __eq__(self, other: object) -> bool:
+        return self.dest == other.dest if isinstance(other, Param) else False
+
+    def __hash__(self) -> int:
+        return hash(self.dest)
 
     def is_option(self) -> bool:
         """Check if Param is an option."""

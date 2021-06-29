@@ -20,6 +20,18 @@ def default_error_handler(cli: "CLInterface", exc: CLError) -> t.NoReturn:
     sys.exit(f"{name}: {exc}")
 
 
+def unique(items: t.Iterable[t.Any]) -> t.List[t.Any]:
+    """Return distinct items in items.
+
+    If an item is already in the result, the new value replaces the existing
+    value.
+    """
+    result: t.Dict[t.Any, None] = {}
+    for item in items:
+        result[item] = item
+    return list(result.values())
+
+
 class CLInterface:  # pylint: disable=R0902,R0913
     """Shell (argv) parser."""
     def __init__(self,
@@ -43,7 +55,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         self.description = (
             textwrap.dedent(description.strip()) if description else None
         )
-        self.params = list(params or ())
+        self.params = unique(params or ())
         self.subparsers = {s.name: s for s in subparsers or []}
         self.callback = callback
         self.error_handler = error_handler
@@ -52,7 +64,7 @@ class CLInterface:  # pylint: disable=R0902,R0913
         self.options = {}
         self.arguments = {}
 
-        for param in params or ():
+        for param in self.params:
             for optarg in param.optargs:
                 if optarg.startswith("-"):
                     self.options[optarg] = param

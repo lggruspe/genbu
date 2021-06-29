@@ -1,8 +1,7 @@
 # pylint: disable=disallowed-name,invalid-name,redefined-outer-name
 """Test genbu.cli."""
 
-import math
-
+import decimal
 import sys
 import typing as t
 
@@ -12,22 +11,18 @@ import pytest
 from genbu import CLInterface, Param, combinators as comb
 
 
-def is_nan(value: t.Any) -> bool:
-    """Check if value is nan.
-
-    Works with non-numbers.
-    """
-    try:
-        return math.isnan(value)
-    except ValueError:
-        return t.cast(bool, value.is_snan())
-    except TypeError:
-        return False
-
-
 def anything_but_nan() -> st.SearchStrategy[t.Any]:
     """Return anything but nan."""
-    return st.from_type(object).filter(lambda x: not is_nan(x))
+    return st.one_of(
+        st.from_type(object).filter(
+            lambda x: all(
+                not isinstance(x, t) for t in (float, complex, decimal.Decimal)
+            )
+        ),
+        st.complex_numbers(allow_nan=False),
+        st.decimals(allow_nan=False),
+        st.floats(allow_nan=False),
+    )
 
 
 def make_cli(**kwargs: t.Any) -> CLInterface:

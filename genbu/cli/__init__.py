@@ -7,6 +7,7 @@ import textwrap
 import typing as t
 
 from ..exceptions import CLError
+from ..infer_params import infer_params_from_signature
 from ..params import Param
 from .normalize import UnknownOption, normalize
 
@@ -55,7 +56,9 @@ class CLInterface:  # pylint: disable=R0902,R0913
         self.description = (
             textwrap.dedent(description.strip()) if description else None
         )
-        self.params = unique(params or ())
+        self.params = unique(
+            infer_params_from_signature(callback) if params is None else params
+        )
         self.subparsers = {s.name: s for s in subparsers or []}
         self.callback = callback
         self.error_handler = error_handler

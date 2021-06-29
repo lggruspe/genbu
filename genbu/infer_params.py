@@ -29,6 +29,7 @@ def infer_params_from_signature(function: t.Callable[..., t.Any],
     """Infer CLInterface Params from function signature.
 
     Creates named options by default.
+    Throws UnsupportedType.
     """
     return [
         Param(

@@ -1,7 +1,6 @@
-# pylint: disable=disallowed-name,invalid-name,redefined-outer-name
+# pylint: disable=disallowed-name,invalid-name,no-self-use,redefined-outer-name
 """Test genbu.cli."""
 
-import decimal
 import sys
 import typing as t
 
@@ -9,20 +8,6 @@ from hypothesis import given, strategies as st
 import pytest
 
 from genbu import CLInterface, Param, combinators as comb
-
-
-def anything_but_nan() -> st.SearchStrategy[t.Any]:
-    """Return anything but nan."""
-    return st.one_of(
-        st.from_type(object).filter(
-            lambda x: all(
-                not isinstance(x, t) for t in (float, complex, decimal.Decimal)
-            )
-        ),
-        st.complex_numbers(allow_nan=False),
-        st.decimals(allow_nan=False),
-        st.floats(allow_nan=False),
-    )
 
 
 def make_cli(**kwargs: t.Any) -> CLInterface:
@@ -253,11 +238,10 @@ def test_clinterface_name_and_description_are_optional() -> None:
     assert cli.description == "Hello, world!"
 
 
-@given(anything_but_nan())
-def test_clinterface_run_with_defaults_in_function_args(default: t.Any,
-                                                        ) -> None:
+@given(st.text())
+def test_clinterface_run_with_defaults_in_function_args(default: str) -> None:
     """It should use defaults when no arg is specified."""
-    def echo(message: t.Any = default) -> t.Any:
+    def echo(message: str = default) -> t.Any:
         """Return message."""
         return message
 
@@ -278,3 +262,31 @@ def test_clinterface_params_get_overwritten() -> None:
     params = cli.params
     assert len(params) == 1
     assert params[0] is foo2
+
+
+class TestCLInterfaceParams:
+    """Test CLInterface.params."""
+    @pytest.fixture
+    def function(self) -> t.Callable[..., t.Any]:
+        """Return CLInterface callback."""
+        def callback(foo: str, bar: int, baz: float) -> None:  # noqa; # pylint: disable=unused-argument
+            """Does nothing."""
+        return callback
+
+    def test_params_get_inferred_by_default(self,
+                                            function: t.Callable[..., t.Any],
+                                            ) -> None:
+        """Infer params if None."""
+        cli = CLInterface(function)
+        params = cli.params
+        assert len(params) == 3
+        assert params[0].dest == "foo"
+        assert params[1].dest == "bar"
+        assert params[2].dest == "baz"
+
+    def test_does_not_infer_empty_params(self,
+                                         function: t.Callable[..., t.Any],
+                                         ) -> None:
+        """Don't infer params if params is an empty sequence."""
+        cli = CLInterface(function, params=[])
+        assert not cli.params

@@ -1,6 +1,8 @@
 # pylint: disable=disallowed-name,invalid-name,redefined-outer-name
 """Test genbu.cli."""
 
+import math
+
 import sys
 import typing as t
 
@@ -8,6 +10,24 @@ from hypothesis import given, strategies as st
 import pytest
 
 from genbu import CLInterface, Param, combinators as comb
+
+
+def is_nan(value: t.Any) -> bool:
+    """Check if value is nan.
+
+    Works with non-numbers.
+    """
+    try:
+        return math.isnan(value)
+    except ValueError:
+        return t.cast(bool, value.is_snan())
+    except TypeError:
+        return False
+
+
+def anything_but_nan() -> st.SearchStrategy[t.Any]:
+    """Return anything but nan."""
+    return st.from_type(object).filter(lambda x: not is_nan(x))
 
 
 def make_cli(**kwargs: t.Any) -> CLInterface:
@@ -236,3 +256,15 @@ def test_clinterface_name_and_description_are_optional() -> None:
 
     assert cli.name == "hello"
     assert cli.description == "Hello, world!"
+
+
+@given(anything_but_nan())
+def test_clinterface_run_with_defaults_in_function_args(default: t.Any,
+                                                        ) -> None:
+    """It should use defaults when no arg is specified."""
+    def echo(message: t.Any = default) -> t.Any:
+        """Return message."""
+        return message
+
+    cli = CLInterface(echo)
+    assert cli.run([]) == default

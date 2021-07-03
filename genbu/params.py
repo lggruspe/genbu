@@ -1,8 +1,6 @@
 """Genbu paramater descriptor."""
 
-import textwrap
 import typing as t
-
 from . import combinators as comb
 
 
@@ -32,9 +30,6 @@ class Param:  # pylint: disable=too-many-arguments
                  arg_description: t.Optional[str] = None):
         if optargs is None:
             optargs = [dest]
-        if description is not None:
-            description = textwrap.dedent(description.strip())
-
         for optarg in optargs:
             if "=" in optarg or any(c.isspace() for c in optarg):
                 raise InvalidOption(optarg)

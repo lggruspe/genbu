@@ -178,3 +178,16 @@ def test_usage_on_subparser() -> None:
     assert usage(bar).startswith("""usage:  foo bar
 
 Bar subcommand""")
+
+
+def test_usage_with_no_description() -> None:
+    """There's one blank line between usage patterns and options list."""
+    def callback(arg: None) -> None:  # pylint: disable=W0621,W0613
+        ...
+
+    callback(None)
+    cli = Genbu(callback)
+    assert usage(cli) == """usage:  callback [options]
+
+options:
+    --arg"""

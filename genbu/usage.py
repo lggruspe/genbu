@@ -111,11 +111,14 @@ def usage(parser: Genbu,
         header = parser.description or ""
 
     result = render_example(parser)
-    result += f"\n\n{textwrap.dedent(header.strip())}\n\n"
+    if header:
+        result += f"\n\n{header}"
     if parser.takes_params():
+        result += "\n\n"
         result += options_block(*parser.params)
     if parser.has_subcommands():
+        result += "\n\n"
         result += command_block("commands", parser)
-    if footer is not None:
-        result += textwrap.dedent(footer.strip())
+    if footer:
+        result += f"\n\n{footer}"
     return result

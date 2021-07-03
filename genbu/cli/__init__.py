@@ -3,7 +3,6 @@
 import collections
 import inspect
 import sys
-import textwrap
 import typing as t
 
 from ..exceptions import CLError
@@ -46,16 +45,13 @@ class Genbu:  # pylint: disable=R0902,R0913
 
         if name is None:
             name = callback.__name__
-        if description is None:
-            description = callback.__doc__
 
         assert name is not None
         assert not any(c.isspace() for c in name)
 
         self.name = name
-        self.description = (
-            textwrap.dedent(description.strip()) if description else None
-        )
+        self.description = description if description is not None else \
+            inspect.getdoc(callback)
         self.params = unique(
             infer_params_from_signature(callback) if params is None else params
         )

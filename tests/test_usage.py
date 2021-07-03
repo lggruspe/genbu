@@ -10,6 +10,13 @@ def callback() -> None:
     """Does nothing."""
 
 
+def callback_without_docstring() -> None:  # noqa; # pylint: disable=missing-function-docstring
+    ...
+
+
+callback_without_docstring()
+
+
 def test_usage_with_params() -> None:
     """usage(...) should contain description of options."""
     cli = Genbu(
@@ -191,3 +198,21 @@ def test_usage_with_no_description() -> None:
 
 options:
     --arg"""
+
+
+def test_usage_subcommand_with_no_description() -> None:
+    """There's nothing after the command name (e.g. doesn't show "None")."""
+    cli = Genbu(
+        callback,
+        subparsers=[
+            Genbu(callback_without_docstring, name="foo"),
+            Genbu(callback_without_docstring, name="bar"),
+        ],
+    )
+
+    # There's a space after "foo", because it's left justified so its length is
+    # divisible by 4.
+    expected = "    foo \n    bar"
+    actual = usage(cli)
+    assert expected in actual
+    assert "None" not in actual

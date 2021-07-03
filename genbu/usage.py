@@ -31,7 +31,10 @@ def command_block(group_name: str, parser: Genbu) -> str:
     width = max(len(c) for c in names)
     width += 4 - width % 4  # So that name column is a multiple of 4
     for sub in parser.subparsers.values():
-        result += f"    {sub.name.ljust(width)}    {sub.description}\n"
+        result += f"    {sub.name.ljust(width)}"
+        if sub.description:
+            result += "    " + sub.description
+        result += "\n"
     return result.strip()
 
 
@@ -102,23 +105,23 @@ def render_example(parser: Genbu) -> str:
     return result.strip()
 
 
-def usage(parser: Genbu,
+def usage(cli: Genbu,
           header: t.Optional[str] = None,
           footer: t.Optional[str] = None,
           ) -> str:
     """Construct usage string."""
     if header is None:
-        header = parser.description or ""
+        header = cli.description or ""
 
-    result = render_example(parser)
+    result = render_example(cli)
     if header:
         result += f"\n\n{header}"
-    if parser.takes_params():
+    if cli.takes_params():
         result += "\n\n"
-        result += options_block(*parser.params)
-    if parser.has_subcommands():
+        result += options_block(*cli.params)
+    if cli.has_subcommands():
         result += "\n\n"
-        result += command_block("commands", parser)
+        result += command_block("commands", cli)
     if footer:
         result += f"\n\n{footer}"
     return result

@@ -39,12 +39,10 @@ class Genbu:  # pylint: disable=R0902,R0913
                  *,
                  name: t.Optional[str] = None,
                  description: t.Optional[str] = None,
-                 params: t.Optional[t.List[Param]] = None,
+                 params: t.Optional[t.List[t.Union[Param, str]]] = None,
                  subparsers: t.Optional[t.Sequence["Genbu"]] = None,
                  error_handler: ExceptionHandler = default_error_handler):
         """Note: infer_params_from_signature may throw UnsupportedCallback."""
-        default_params = infer_params_from_signature(callback)
-
         if name is None:
             name = callback.__name__
 
@@ -54,11 +52,12 @@ class Genbu:  # pylint: disable=R0902,R0913
         self.name = name
         self.description = description if description is not None else \
             inspect.getdoc(callback)
-        self.params = unique(default_params if params is None else params)
         self.subparsers = {s.name: s for s in subparsers or []}
         self.callback = callback
         self.error_handler = error_handler
         self.parent = None
+
+        self._set_params(params)
 
         self.options = {}
         self.arguments = {}
@@ -73,11 +72,32 @@ class Genbu:  # pylint: disable=R0902,R0913
         for sub in self.subparsers.values():
             sub.parent = self
 
+    def _set_params(self,
+                    params: t.Optional[t.List[t.Union[Param, str]]] = None,
+                    ) -> None:
+        """Set params.
+
+        If params contains "...", then the params arguments override the
+        inferred Params.
+        Should be called after self.callback is set.
+        """
+        default_params = infer_params_from_signature(self.callback)
+        filtered = [p for p in params or () if isinstance(p, Param)]
+        if params is None:
+            self.params = unique(default_params)
+        elif "..." in params:
+            self.params = unique(default_params + filtered)
+        else:
+            self.params = unique(filtered)
+
     def complete_name(self) -> t.Tuple[str, ...]:
         """Return complete command name (includes parents)."""
         if self.parent is None:
             return (self.name,)
-        return self.parent.complete_name() + (self.name,)
+        return t.cast(
+            t.Tuple[str, ...],
+            self.parent.complete_name() + (self.name,),
+        )
 
     def parse_opt(self,
                   name: str,

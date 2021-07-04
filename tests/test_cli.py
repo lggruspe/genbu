@@ -7,7 +7,7 @@ import typing as t
 from hypothesis import given, strategies as st
 import pytest
 
-from genbu import Genbu, Param, combinators as comb
+from genbu import Genbu, Param, combinators as comb, infer_params
 
 
 def make_cli(**kwargs: t.Any) -> Genbu:
@@ -227,7 +227,7 @@ def test_cli_run_with_subparsers() -> None:
             foo.run(source.split())
 
 
-def test_clinterface_name_and_description_are_optional() -> None:
+def test_genbu_name_and_description_are_optional() -> None:
     """It should infer name and description from callback instead."""
     def hello() -> None:
         """Hello, world!"""
@@ -239,7 +239,7 @@ def test_clinterface_name_and_description_are_optional() -> None:
 
 
 @given(st.text())
-def test_clinterface_run_with_defaults_in_function_args(default: str) -> None:
+def test_genbu_run_with_defaults_in_function_args(default: str) -> None:
     """It should use defaults when no arg is specified."""
     def echo(message: str = default) -> t.Any:
         """Return message."""
@@ -249,9 +249,8 @@ def test_clinterface_run_with_defaults_in_function_args(default: str) -> None:
     assert cli.run([]) == default
 
 
-def test_clinterface_params_get_overwritten() -> None:
-    """If multiple Params have the same dest, the overwrite the existing Param.
-    """
+def test_genbu_params_get_overwritten() -> None:
+    """If multiple Params have the same dest, existing Param is overwritten."""
     def callback() -> None:
         """Does nothing."""
 
@@ -290,3 +289,27 @@ class TestGenbuParams:
         """Don't infer params if params is an empty sequence."""
         cli = Genbu(function, params=[])
         assert not cli.params
+
+    def test_genbu_params_with_ellipsis(self,
+                                        function: t.Callable[..., t.Any],
+                                        ) -> None:
+        """Params in params args should override inferred params."""
+        inferred = infer_params(function)
+        assert Genbu(function, params=["..."]).params == inferred
+
+        cli = Genbu(
+            function,
+            params=[
+                "...",
+                Param("foo"),
+            ]
+        )
+
+        assert cli.params[0].optargs != inferred[0].optargs
+        for actual, expected in zip(cli.params[1:], inferred[1:]):
+            assert actual == expected
+            assert actual.optargs == expected.optargs
+            assert actual.parser == expected.parser
+            assert actual.aggregator == expected.aggregator
+            assert actual.description == expected.description
+            assert actual.arg_description == expected.arg_description

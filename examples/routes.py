@@ -1,6 +1,6 @@
 import sys
 from genbu import Genbu, Param, combinators as comb, usage
-from examples import add, cat, echo, hello, simple
+from examples import add, cat, echo, ellipsis, hello, simple
 
 
 def show_usage(cli: Genbu, error: bool = False):
@@ -24,7 +24,9 @@ cli = Genbu(
             aggregator=lambda _: show_usage(cli),
         ),
     ],
-    subparsers=[add.cli, cat.cli, echo.cli, hello.cli, simple.cli],
+    subparsers=[
+        add.cli, cat.cli, echo.cli, ellipsis.cli, hello.cli, simple.cli,
+    ],
     callback=lambda: show_usage(cli),
     error_handler=lambda cli, exc: show_usage(cli, error=True),
 )

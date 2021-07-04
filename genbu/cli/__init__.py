@@ -42,6 +42,8 @@ class Genbu:  # pylint: disable=R0902,R0913
                  params: t.Optional[t.List[Param]] = None,
                  subparsers: t.Optional[t.Sequence["Genbu"]] = None,
                  error_handler: ExceptionHandler = default_error_handler):
+        """Note: infer_params_from_signature may throw UnsupportedCallback."""
+        default_params = infer_params_from_signature(callback)
 
         if name is None:
             name = callback.__name__
@@ -52,9 +54,7 @@ class Genbu:  # pylint: disable=R0902,R0913
         self.name = name
         self.description = description if description is not None else \
             inspect.getdoc(callback)
-        self.params = unique(
-            infer_params_from_signature(callback) if params is None else params
-        )
+        self.params = unique(default_params if params is None else params)
         self.subparsers = {s.name: s for s in subparsers or []}
         self.callback = callback
         self.error_handler = error_handler

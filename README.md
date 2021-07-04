@@ -27,6 +27,14 @@ pip install genbu
 Usage
 -----
 
+```python
+# hello.py
+from genbu import Genbu
+
+print(Genbu(lambda name: f"Hello, {name}!").run())
+# Usage example: python hello.py --name "world"
+```
+
 See [examples](./examples/).
 
 License

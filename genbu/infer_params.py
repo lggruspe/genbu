@@ -8,6 +8,13 @@ from .params import Param
 from .infer import infer_parser
 
 
+class UnsupportedCallback(ValueError):
+    """Unsupported Genbu callback (e.g. no signature)."""
+    def __init__(self, callback: t.Any):
+        super().__init__(callback)
+        self.callback = callback
+
+
 def infer_parser_from_parameter(parameter: inspect.Parameter) -> comb.Parser:
     """Infer parser from signature.
 
@@ -29,13 +36,18 @@ def infer_params_from_signature(function: t.Callable[..., t.Any],
     """Infer Genbu Params from function signature.
 
     Creates named options by default.
-    Throws UnsupportedType.
+    Throws UnsupportedCallback or UnsupportedType.
     """
+    try:
+        signature = inspect.signature(function)
+    except (TypeError, ValueError) as exc:
+        raise UnsupportedCallback(function) from exc
+
     return [
         Param(
             dest=p.name,
             optargs=[f"--{p.name}"],
             parser=infer_parser_from_parameter(p),
         )
-        for p in inspect.signature(function).parameters.values()
+        for p in signature.parameters.values()
     ]

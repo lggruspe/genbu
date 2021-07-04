@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1] - 2021-07-04
+
+-   Fix `genbu.usage`.
+-   `Genbu` now raises `UnsupportedCallback` if callback has no
+    signature.
+-   Added: `"..."` in the `params` list tells Genbu to infer `Param`s
+    from the callback's signature and to use the other `Param`s in the
+    list to override the default `Param`s.
+
 ## [0.2] - 2021-07-01
 
 - Rename `CLInterface` to `Genbu`.
@@ -21,5 +30,6 @@
 
 - Initial release
 
+[0.2.1]: https://github.com/lggruspe/genbu/releases/tag/v0.2.1
 [0.2]: https://github.com/lggruspe/genbu/releases/tag/v0.2
 [0.1]: https://github.com/lggruspe/genbu/releases/tag/v0.1

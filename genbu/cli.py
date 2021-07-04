@@ -5,10 +5,10 @@ import inspect
 import sys
 import typing as t
 
-from ..exceptions import CLError
-from ..infer_params import infer_params_from_signature
-from ..params import Param
+from .exceptions import CLError
+from .infer_params import infer_params_from_signature
 from .normalize import UnknownOption, normalize
+from .params import Param
 
 
 ExceptionHandler = t.Callable[["Genbu", CLError], t.NoReturn]

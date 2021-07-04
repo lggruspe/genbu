@@ -2,8 +2,8 @@
 
 import typing as t
 
-from ..exceptions import CLError
-from ..params import Param
+from .exceptions import CLError
+from .params import Param
 
 
 class UnknownOption(CLError):

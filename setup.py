@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="genbu",
-    version="0.2",
+    version="0.2.1",
     author="Levi Gruspe",
     author_email="mail.levig@gmail.com",
     description="Create CLIs using parser combinators and type hints",
